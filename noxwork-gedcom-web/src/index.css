@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+/* ─── Noxwork Design Tokens ──────────────────────────────────── */
+@theme {
+  --color-nox-cobalt: #0047AB;
+  --color-nox-cobalt-light: #1a6dd4;
+  --color-nox-cobalt-dark: #003080;
+  --color-nox-orange: #FF8C00;
+  --color-nox-orange-light: #ffaa40;
+  --color-nox-orange-dark: #cc7000;
+  --color-nox-surface: #0f172a;
+  --color-nox-surface-light: #1e293b;
+  --color-nox-surface-lighter: #334155;
+  --color-nox-text: #f1f5f9;
+  --color-nox-text-muted: #94a3b8;
+  --color-nox-male: #3b82f6;
+  --color-nox-female: #f97316;
+  --color-nox-unknown: #6b7280;
+  --color-nox-warning: #f59e0b;
+  --color-nox-danger: #ef4444;
+}
+
+/* ─── Global Styles ──────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--color-nox-surface);
+  color: var(--color-nox-text);
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── React Flow Overrides ───────────────────────────────────── */
+
+.react-flow__minimap {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--color-nox-surface-lighter);
+}
+
+.react-flow__controls {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--color-nox-surface-lighter);
+}
+
+.react-flow__controls button {
+  background-color: var(--color-nox-surface-light);
+  color: var(--color-nox-text);
+  border-color: var(--color-nox-surface-lighter);
+}
+
+.react-flow__controls button:hover {
+  background-color: var(--color-nox-surface-lighter);
+}
