@@ -57,6 +57,7 @@ export interface UploadResponse {
 /* ─── React Flow Node Data ───────────────────────────────────── */
 
 export interface PersonNodeData {
+    [key: string]: unknown;
     label: string;
     fullName: string;
     givenName: string;
