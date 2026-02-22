@@ -1,16 +1,11 @@
-# 🌳 noxwork-gedcom
+# noxwork-gedcom
 
 > A high-performance GEDCOM processing platform for parsing, analyzing, and visualizing complex family trees — built by **Fernando Valderrábano Reyes** at **Noxwork Labs**.
 
-[![NestJS](https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs&logoColor=white)](https://nestjs.com/)
-[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7+-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-22+-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
-[![License](https://img.shields.io/badge/License-UNLICENSED-lightgrey)]()
 
 ---
 
-## 📦 Monorepo Structure
+## Monorepo Structure
 
 ```text
 noxwork-gedcom/
@@ -20,12 +15,12 @@ noxwork-gedcom/
 
 | Package | Tech | Status |
 |---------|------|--------|
-| **noxwork-gedcom-api** | NestJS 11 · TypeScript · Node.js | ✅ Active |
-| **noxwork-gedcom-web** | React 19 · Vite · React Flow · Tailwind CSS v4 | ✅ Active |
+| **noxwork-gedcom-api** | NestJS 11 · TypeScript · Node.js | Active |
+| **noxwork-gedcom-web** | React 19 · Vite · React Flow · Tailwind CSS v4 | Active |
 
 ---
 
-## 🚀 noxwork-gedcom-api
+## noxwork-gedcom-api
 
 The backend service handles GEDCOM file parsing, relationship resolution, and data persistence.
 
@@ -136,14 +131,14 @@ The API will be available at `http://localhost:3000/api`.
 
 ---
 
-## 🖥️ noxwork-gedcom-web
+## noxwork-gedcom-web
 
 The frontend dashboard for visualizing GEDCOM family trees as interactive graphs.
 
 ### Key Features
 
 - **React Flow Canvas** — Interactive, zoomable graph with background grid, minimap, and controls.
-- **PersonNode** — Custom node with gender-colored borders (blue ♂ / orange ♀), birth/death dates, and multi-role ⚠ badge for pedigree collapse cases.
+- **PersonNode** — Custom node with gender-colored borders, birth/death dates, and multi-role badge for pedigree collapse cases.
 - **Dagre Layout** — Automatic hierarchical positioning (top-to-bottom) with spouse alignment.
 - **Drag & Drop Upload** — Upload `.ged` files directly in the browser.
 - **Dark Theme** — Noxwork-branded cobalt/orange palette with Tailwind CSS v4.
@@ -181,27 +176,46 @@ The frontend will be available at `http://localhost:5173` and proxies API calls 
 
 ---
 
-## 🗺️ Roadmap
+## Roadmap
 
 - [x] GEDCOM parser engine (INDI, FAM, HEAD)
 - [x] REST API for file upload and session retrieval
 - [x] Graph-based relationship resolver (BFS, multi-path)
 - [x] React frontend with React Flow visualization
 - [x] Layout engine (Dagre) for automatic node positioning with spouse alignment
-- [ ] PostgreSQL persistence with Prisma ORM
+- [x] Backend deployment (Railway)
+- [x] Frontend deployment (Vercel)
+- [ ] PostgreSQL persistence with Prisma ORM (Neon.tech)
 - [ ] PDF/PNG export of family trees
 - [ ] Editor mode — create trees from scratch in the browser
+- [ ] Custom domain (`gedcom.noxwork.net`)
 
 ---
 
-## 🏗️ Tech Stack
+## Deployment
+
+| Service | Platform | URL |
+|---------|----------|-----|
+| **API** | Railway | [`noxwork-gedcom-production.up.railway.app`](https://noxwork-gedcom-production.up.railway.app/api) |
+| **Frontend** | Vercel | *Pending deployment* |
+| **Database** | Neon.tech | *Planned* |
+
+### Infrastructure Notes
+
+- The API binds to `0.0.0.0` for Railway compatibility.
+- A `vercel.json` rewrite proxies `/api/*` from Vercel to the Railway backend, keeping the same relative-path pattern used in development.
+- CORS is configured via the `CORS_ORIGIN` environment variable.
+
+---
+
+## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
 | **Backend** | NestJS 11 · TypeScript 5.7 · Node.js |
 | **Frontend** | React 19 · Vite 7 · React Flow v12 · Tailwind CSS v4 · Zustand 5 · Dagre |
 | **Database** *(planned)* | PostgreSQL 16+ · Prisma ORM |
-| **Hosting** *(planned)* | Vercel (frontend) · Railway (backend) · Neon (DB) |
+| **Hosting** | Railway (backend) · Vercel (frontend) · Neon (DB, planned) |
 
 ---
 
