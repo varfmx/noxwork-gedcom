@@ -84,6 +84,8 @@ function mapFamiliesToEdges(
                 id: `spouse-${family.id}`,
                 source: family.husbandId,
                 target: family.wifeId,
+                sourceHandle: 'spouse-right',
+                targetHandle: 'spouse-left',
                 type: 'straight',
                 animated: false,
                 style: {
@@ -111,6 +113,8 @@ function mapFamiliesToEdges(
                     id: `child-${family.id}-${sourceParent}-${childId}`,
                     source: sourceParent,
                     target: childId,
+                    sourceHandle: 'bottom',
+                    targetHandle: 'top',
                     type: 'smoothstep',
                     animated: false,
                     style: {

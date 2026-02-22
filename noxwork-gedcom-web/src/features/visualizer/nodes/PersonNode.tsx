@@ -41,7 +41,24 @@ function PersonNodeComponent({ data }: NodeProps) {
             <Handle
                 type="target"
                 position={Position.Top}
+                id="top"
                 className="!w-2 !h-2 !bg-nox-cobalt !border-nox-surface"
+            />
+
+            {/* Spouse connection (outgoing → right side) */}
+            <Handle
+                type="source"
+                position={Position.Right}
+                id="spouse-right"
+                className="!w-2 !h-2 !bg-nox-orange !border-nox-surface"
+            />
+
+            {/* Spouse connection (incoming ← left side) */}
+            <Handle
+                type="target"
+                position={Position.Left}
+                id="spouse-left"
+                className="!w-2 !h-2 !bg-nox-orange !border-nox-surface"
             />
 
             <div
@@ -144,6 +161,7 @@ function PersonNodeComponent({ data }: NodeProps) {
             <Handle
                 type="source"
                 position={Position.Bottom}
+                id="bottom"
                 className="!w-2 !h-2 !bg-nox-orange !border-nox-surface"
             />
         </>

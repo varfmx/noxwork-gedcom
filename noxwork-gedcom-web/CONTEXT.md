@@ -1,7 +1,7 @@
 # noxwork-gedcom-web — Project Context
 
 > **Last updated:** 2026-02-21
-> **Status:** Phase 1 — Canvas setup & custom node component ✅
+> **Status:** Phase 2 — Dagre hierarchical layout with spouse alignment ✅
 > **Runtime:** React 19 + Vite 7 + TypeScript 5.9 (strict mode)
 > **Target:** ES2022, bundler module resolution
 
@@ -15,7 +15,7 @@ The frontend is responsible for:
 - Uploading GEDCOM files and sending them to the backend API
 - Visualizing parsed family trees as an interactive graph using React Flow
 - Displaying enriched individual data including multi-role kinship overlaps
-- (Future) Applying automatic hierarchical layout via Dagre/ELK
+- Automatic hierarchical layout via Dagre with spouse alignment
 - (Future) Exporting tree visualizations as PDF/PNG
 
 The **backend** (NestJS 11 at `localhost:3000`) parses GEDCOM files and resolves kinship relationships.
@@ -31,6 +31,7 @@ The **backend** (NestJS 11 at `localhost:3000`) parses GEDCOM files and resolves
 | Language       | TypeScript 5.9                 | Strict mode, `verbatimModuleSyntax`             |
 | Visualization  | React Flow v12 (`@xyflow/react`) | Custom nodes, dark `colorMode`                |
 | State          | Zustand 5                      | Single store, no boilerplate                    |
+| Layout         | Dagre (`@dagrejs/dagre`)       | Hierarchical TB positioning + spouse alignment  |
 | Styling        | Tailwind CSS v4                | CSS-first config via `@tailwindcss/vite`        |
 | Linting        | ESLint 9 + react-hooks plugin  |                                                 |
 
@@ -94,9 +95,11 @@ uploadAndParse(fileContent) → fetch /api/gedcom/upload → map to nodes/edges 
 
 - **Nodes:** Each `GedcomIndividual` → React Flow `Node<PersonNodeData>` of type `'person'`
 - **Edges:** Built from `GedcomFamily` records:
-  - `husbandId ↔ wifeId` = Spouse edge (dashed, orange `#FF8C00`)
-  - `parentId → childId` = Parent-child edge (solid, cobalt `#0047AB`)
-- **Layout:** `applyLayout()` is a placeholder using grid positioning, to be replaced with Dagre
+  - `husbandId ↔ wifeId` = Spouse edge (straight, dashed, orange `#FF8C00`)
+  - `parentId → childId` = Parent-child edge (smoothstep, solid, cobalt `#0047AB`)
+- **Layout:** `applyLayout()` uses Dagre for hierarchical TB positioning.
+  Spouse edges are excluded from the Dagre graph to preserve generational tiers;
+  a post-processing step aligns each spouse node to the right of their partner at the same Y level.
 
 ### 4.3 Custom Node System (React Flow)
 
@@ -220,9 +223,10 @@ Key flags: `strict: true`, `noUnusedLocals`, `noUnusedParameters`, `erasableSynt
 - [x] FileUploader with drag-and-drop
 - [x] Zustand store with upload → parse → render pipeline
 
-### 🔲 Phase 2 — Automatic Layout
-- [ ] Integrate Dagre or ELK.js for hierarchical positioning
-- [ ] Generational rank assignment
+### ✅ Phase 2 — Automatic Layout
+- [x] Dagre integration for hierarchical top-to-bottom positioning
+- [x] Spouse alignment post-processing (same Y, adjacent X)
+- [x] Generational rank assignment via parent-child edge graph
 - [ ] Anti-overlap for consanguinity edges
 
 ### 🔲 Phase 3 — Interactivity
@@ -254,3 +258,5 @@ Key flags: `strict: true`, `noUnusedLocals`, `noUnusedParameters`, `erasableSynt
 6. **Zustand v5** — no more `create<T>()(...)` double-call pattern; just `create<T>(...)` directly
 7. **`proOptions={{ hideAttribution: true }}`** — removes React Flow watermark
 8. **Node type key `'person'`** — registered in `TreeCanvas.tsx`, used in `useTreeStore.ts` when mapping
+9. **Spouse edges use `data.isSpouse`** — this flag controls Dagre exclusion and post-process alignment
+10. **PersonNodeData needs `[key: string]: unknown`** — React Flow v12 requires node data to satisfy `Record<string, unknown>`

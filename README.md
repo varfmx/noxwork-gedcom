@@ -3,7 +3,8 @@
 > A high-performance GEDCOM processing platform for parsing, analyzing, and visualizing complex family trees — built by **Fernando Valderrábano Reyes** at **Noxwork Labs**.
 
 [![NestJS](https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs&logoColor=white)](https://nestjs.com/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7+-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-22+-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![License](https://img.shields.io/badge/License-UNLICENSED-lightgrey)]()
 
@@ -14,13 +15,13 @@
 ```text
 noxwork-gedcom/
 ├── noxwork-gedcom-api/      # Backend — NestJS REST API
-└── (noxwork-gedcom-web/)     # Frontend — React (planned)
+└── noxwork-gedcom-web/      # Frontend — React + React Flow
 ```
 
 | Package | Tech | Status |
 |---------|------|--------|
 | **noxwork-gedcom-api** | NestJS 11 · TypeScript · Node.js | ✅ Active |
-| **noxwork-gedcom-web** | React 19 · Vite · React Flow | 🔜 Planned |
+| **noxwork-gedcom-web** | React 19 · Vite · React Flow · Tailwind CSS v4 | ✅ Active |
 
 ---
 
@@ -120,7 +121,7 @@ The `RelationshipResolver` classifies paths through a kinship graph into these t
 
 ```bash
 # Clone the repo
-git clone https://github.com/your-org/noxwork-gedcom.git
+git clone git@github.com:varfmx/noxwork-gedcom.git
 cd noxwork-gedcom
 
 # Install API dependencies
@@ -132,6 +133,30 @@ npm run start:dev
 ```
 
 The API will be available at `http://localhost:3000/api`.
+
+---
+
+## 🖥️ noxwork-gedcom-web
+
+The frontend dashboard for visualizing GEDCOM family trees as interactive graphs.
+
+### Key Features
+
+- **React Flow Canvas** — Interactive, zoomable graph with background grid, minimap, and controls.
+- **PersonNode** — Custom node with gender-colored borders (blue ♂ / orange ♀), birth/death dates, and multi-role ⚠ badge for pedigree collapse cases.
+- **Dagre Layout** — Automatic hierarchical positioning (top-to-bottom) with spouse alignment.
+- **Drag & Drop Upload** — Upload `.ged` files directly in the browser.
+- **Dark Theme** — Noxwork-branded cobalt/orange palette with Tailwind CSS v4.
+
+### Install & Run
+
+```bash
+cd noxwork-gedcom-web
+npm install
+npm run dev
+```
+
+The frontend will be available at `http://localhost:5173` and proxies API calls to `:3000`.
 
 #### Available Scripts
 
@@ -161,9 +186,9 @@ The API will be available at `http://localhost:3000/api`.
 - [x] GEDCOM parser engine (INDI, FAM, HEAD)
 - [x] REST API for file upload and session retrieval
 - [x] Graph-based relationship resolver (BFS, multi-path)
+- [x] React frontend with React Flow visualization
+- [x] Layout engine (Dagre) for automatic node positioning with spouse alignment
 - [ ] PostgreSQL persistence with Prisma ORM
-- [ ] React frontend with React Flow visualization
-- [ ] Layout engine (Dagre) for automatic node positioning
 - [ ] PDF/PNG export of family trees
 - [ ] Editor mode — create trees from scratch in the browser
 
@@ -174,7 +199,7 @@ The API will be available at `http://localhost:3000/api`.
 | Layer | Technology |
 |-------|-----------|
 | **Backend** | NestJS 11 · TypeScript 5.7 · Node.js |
-| **Frontend** *(planned)* | React 19 · Vite · React Flow · Tailwind CSS |
+| **Frontend** | React 19 · Vite 7 · React Flow v12 · Tailwind CSS v4 · Zustand 5 · Dagre |
 | **Database** *(planned)* | PostgreSQL 16+ · Prisma ORM |
 | **Hosting** *(planned)* | Vercel (frontend) · Railway (backend) · Neon (DB) |
 

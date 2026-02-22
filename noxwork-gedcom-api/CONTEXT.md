@@ -309,10 +309,10 @@ The `GedcomEngine` currently supports GEDCOM 5.5/5.5.1 tags:
 - [x] Multi-role overlap detection for pedigree collapse scenarios
 - [x] Unit tests: 18 tests covering 9 categories (all passing)
 
-### 🔲 Phase 3 — Layout Engine
-- [ ] `parser/layout-helper.ts` — Dagre-based coordinate calculation
-- [ ] Generational rank assignment for hierarchical positioning
-- [ ] Anti-overlap algorithms for consanguinity edges
+### ✅ Phase 3 — Layout Engine *(implemented in frontend)*
+- [x] Dagre-based hierarchical TB positioning (in `noxwork-gedcom-web`)
+- [x] Generational rank assignment from parent-child edges
+- [x] Spouse alignment post-processing (same Y level)
 
 ### 🔲 Phase 4 — Database Integration
 - [ ] Prisma ORM setup with PostgreSQL 16+
