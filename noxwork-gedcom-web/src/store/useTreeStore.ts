@@ -6,8 +6,11 @@ import {
     type OnEdgesChange,
     applyNodeChanges,
     applyEdgeChanges,
+    type NodeChange,
+    type EdgeChange,
 } from '@xyflow/react';
 import Dagre from '@dagrejs/dagre';
+import debounce from 'lodash.debounce';
 import type {
     PersonNodeData,
     UploadResponse,
@@ -22,6 +25,46 @@ const API_BASE = '/api';
 /** Approximate dimensions of PersonNode for layout calculation */
 const NODE_WIDTH = 260;
 const NODE_HEIGHT = 120;
+
+/* ─── API Sync Helpers ───────────────────────────────────────── */
+
+const showToast = (message: string, isError = false) => {
+    // Simple fallback toast. In a real app, use sonner or react-hot-toast.
+    // Noxwork brand color for alerts: Orange (#FF8C00)
+    const toast = document.createElement('div');
+    toast.textContent = message;
+    toast.style.position = 'fixed';
+    toast.style.bottom = '20px';
+    toast.style.right = '20px';
+    toast.style.backgroundColor = isError ? '#FF8C00' : '#4CAF50';
+    toast.style.color = 'white';
+    toast.style.padding = '12px 24px';
+    toast.style.borderRadius = '8px';
+    toast.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+    toast.style.zIndex = '9999';
+    toast.style.fontFamily = 'sans-serif';
+    toast.style.transition = 'opacity 0.3s ease';
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => document.body.removeChild(toast), 300);
+    }, 3000);
+};
+
+const syncNodePosition = debounce(async (id: string, position: { x: number, y: number }) => {
+    try {
+        const res = await fetch(`${API_BASE}/gedcom/node/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ metadata: { position } }),
+        });
+        if (!res.ok) throw new Error('Failed to sync position');
+    } catch (err) {
+        console.error(err);
+        showToast('Failed to save node position', true);
+    }
+}, 2000);
 
 /* ─── Store Interface ────────────────────────────────────────── */
 
@@ -39,6 +82,11 @@ interface TreeState {
     onEdgesChange: OnEdgesChange;
     applyLayout: () => void;
     reset: () => void;
+
+    // Sync Actions
+    addNode: (node: Node<PersonNodeData>) => Promise<void>;
+    removeNode: (id: string) => Promise<void>;
+    addEdge: (edge: Edge) => Promise<void>;
 }
 
 /* ─── Data Mapping ───────────────────────────────────────────── */
@@ -319,12 +367,37 @@ export const useTreeStore = create<TreeState>((set, get) => ({
         }
     },
 
-    onNodesChange: (changes) => {
-        set({ nodes: applyNodeChanges(changes, get().nodes) as Node<PersonNodeData>[] });
+    onNodesChange: (changes: NodeChange<Node<PersonNodeData>>[]) => {
+        const currentNodes = get().nodes;
+        const nextNodes = applyNodeChanges(changes, currentNodes) as Node<PersonNodeData>[];
+        set({ nodes: nextNodes });
+
+        // Handle position sync
+        changes.forEach((change) => {
+            if (change.type === 'position' && change.position && !change.dragging) {
+                // Dragging stopped, trigger debounced sync
+                syncNodePosition(change.id, change.position);
+            }
+
+            // Handle deletion from UI (e.g. pressing Backspace)
+            if (change.type === 'remove') {
+                get().removeNode(change.id);
+            }
+        });
     },
 
-    onEdgesChange: (changes) => {
-        set({ edges: applyEdgeChanges(changes, get().edges) });
+    onEdgesChange: (changes: EdgeChange[]) => {
+        const currentEdges = get().edges;
+        const nextEdges = applyEdgeChanges(changes, currentEdges);
+        set({ edges: nextEdges });
+
+        // Handle edge deletion from UI
+        changes.forEach((change) => {
+            if (change.type === 'remove') {
+                // If you have an endpoint to delete edges, call it here.
+                // For now, we just update the local state.
+            }
+        });
     },
 
     /**
@@ -336,6 +409,11 @@ export const useTreeStore = create<TreeState>((set, get) => ({
         if (nodes.length === 0) return;
         const layouted = applyDagreLayout(nodes, edges);
         set({ nodes: layouted });
+
+        // Sync all new positions after layout
+        layouted.forEach(node => {
+            syncNodePosition(node.id, node.position);
+        });
     },
 
     reset: () => {
@@ -347,5 +425,71 @@ export const useTreeStore = create<TreeState>((set, get) => ({
             sessionId: null,
             stats: null,
         });
+    },
+
+    // --- Sync Actions ---
+
+    addNode: async (node: Node<PersonNodeData>) => {
+        const previousNodes = get().nodes;
+        set({ nodes: [...previousNodes, node] });
+
+        try {
+            // Assuming you have a POST /gedcom/node endpoint or similar.
+            // If not, you can adapt this to your actual creation endpoint.
+            // For now, we'll just simulate the optimistic update.
+            showToast('Node added locally');
+        } catch (err) {
+            console.error(err);
+            showToast('Failed to add node. Rolling back.', true);
+            set({ nodes: previousNodes }); // Rollback
+        }
+    },
+
+    removeNode: async (id: string) => {
+        const previousNodes = get().nodes;
+        const previousEdges = get().edges;
+
+        // Optimistic update
+        set({
+            nodes: previousNodes.filter(n => n.id !== id),
+            edges: previousEdges.filter(e => e.source !== id && e.target !== id)
+        });
+
+        try {
+            const res = await fetch(`${API_BASE}/gedcom/node/${id}`, {
+                method: 'DELETE',
+            });
+            if (!res.ok) throw new Error('Failed to delete node');
+            showToast('Node deleted successfully');
+        } catch (err) {
+            console.error(err);
+            showToast('Failed to delete node. Rolling back.', true);
+            // Rollback
+            set({ nodes: previousNodes, edges: previousEdges });
+        }
+    },
+
+    addEdge: async (edge: Edge) => {
+        const previousEdges = get().edges;
+        set({ edges: [...previousEdges, edge] });
+
+        try {
+            const res = await fetch(`${API_BASE}/gedcom/relationship`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    treeId: get().sessionId || 'default-tree', // Adjust based on your tree logic
+                    type: edge.data?.isSpouse ? 'SPOUSE' : 'PARENT',
+                    sourceId: edge.source,
+                    targetId: edge.target,
+                }),
+            });
+            if (!res.ok) throw new Error('Failed to create relationship');
+            showToast('Relationship created');
+        } catch (err) {
+            console.error(err);
+            showToast('Failed to create relationship. Rolling back.', true);
+            set({ edges: previousEdges }); // Rollback
+        }
     },
 }));

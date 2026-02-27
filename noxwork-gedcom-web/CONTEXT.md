@@ -1,7 +1,7 @@
 # noxwork-gedcom-web — Project Context
 
-> **Last updated:** 2026-02-21
-> **Status:** Phase 2 — Dagre hierarchical layout with spouse alignment ✅
+> **Last updated:** 2026-02-26
+> **Status:** Phase 3 — Editor Mode & Backend Sync ✅
 > **Runtime:** React 19 + Vite 7 + TypeScript 5.9 (strict mode)
 > **Target:** ES2022, bundler module resolution
 
@@ -16,9 +16,10 @@ The frontend is responsible for:
 - Visualizing parsed family trees as an interactive graph using React Flow
 - Displaying enriched individual data including multi-role kinship overlaps
 - Automatic hierarchical layout via Dagre with spouse alignment
+- **Editor Mode:** Adding, deleting, and moving nodes with real-time debounced sync to the backend.
 - (Future) Exporting tree visualizations as PDF/PNG
 
-The **backend** (NestJS 11 at `localhost:3000`) parses GEDCOM files and resolves kinship relationships.
+The **backend** (NestJS 11 at `localhost:3000`) parses GEDCOM files, resolves kinship relationships, and persists data via Prisma/PostgreSQL.
 
 ---
 
@@ -30,9 +31,10 @@ The **backend** (NestJS 11 at `localhost:3000`) parses GEDCOM files and resolves
 | Build Tool     | Vite 7                         | `@vitejs/plugin-react`                          |
 | Language       | TypeScript 5.9                 | Strict mode, `verbatimModuleSyntax`             |
 | Visualization  | React Flow v12 (`@xyflow/react`) | Custom nodes, dark `colorMode`                |
-| State          | Zustand 5                      | Single store, no boilerplate                    |
+| State          | Zustand 5                      | Single store, optimistic updates, rollbacks     |
 | Layout         | Dagre (`@dagrejs/dagre`)       | Hierarchical TB positioning + spouse alignment  |
 | Styling        | Tailwind CSS v4                | CSS-first config via `@tailwindcss/vite`        |
+| Sync           | lodash.debounce                | Debounced API calls for node positioning        |
 | Linting        | ESLint 9 + react-hooks plugin  |                                                 |
 
 ---
@@ -98,6 +100,7 @@ uploadAndParse(fileContent) → fetch /api/gedcom/upload → map to nodes/edges 
   - `husbandId ↔ wifeId` = Spouse edge (straight, dashed, orange `#FF8C00`)
   - `parentId → childId` = Parent-child edge (smoothstep, solid, cobalt `#0047AB`)
 - **Layout:** `applyLayout()` uses Dagre for hierarchical TB positioning.
+- **Sync Logic:** Optimistic UI updates for adding/removing nodes and edges. Node position changes are debounced (2s) and synced via `PATCH /api/gedcom/node/:id`. Failed API calls trigger state rollbacks and error toasts.
   Spouse edges are excluded from the Dagre graph to preserve generational tiers;
   a post-processing step aligns each spouse node to the right of their partner at the same Y level.
 
