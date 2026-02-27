@@ -86,10 +86,10 @@ El Desafío del "Hijo-Tío-Primo"
 - Dagre Engine: Implementación de algoritmos de posicionamiento por rangos (jerarquía generacional) para evitar el solapamiento de nodos en casos de consanguinidad.
 
 ## Roadmap de Implementación (Fase Inicial)
-- [ ] Paso 1: Configurar el Backend para recibir un archivo .ged y devolver un JSON plano de individuos.
-- [ ] Paso 2: Crear la lógica de "Relaciones" en el Backend que identifique padres, hijos y parejas.
-- [ ] Paso 3: En el Frontend, mapear ese JSON a los objetos nodes y edges que requiere React Flow.
-- [ ] Paso 4: Aplicar el branding de Noxwork a la interfaz.
+- [x] Paso 1: Configurar el Backend para recibir un archivo .ged y devolver un JSON plano de individuos.
+- [x] Paso 2: Crear la lógica de "Relaciones" en el Backend que identifique padres, hijos y parejas.
+- [x] Paso 3: En el Frontend, mapear ese JSON a los objetos nodes y edges que requiere React Flow.
+- [x] Paso 4: Aplicar el branding de Noxwork a la interfaz.
 
 ## Estrategia de Despliegue (Infraestructura Low-Cost)
 - **Frontend Hosting:** Vercel (CI/CD desde GitHub).
@@ -99,7 +99,8 @@ El Desafío del "Hijo-Tío-Primo"
 - **Environment Management:** Uso de variables de entorno (.env) para separar credenciales de DB en Local vs Producción.
 
 ## Módulo de Edición y Exportación
-- **Modo Editor:** Permitir la creación de nodos `Person` y aristas `Relationship` desde el lienzo de React Flow sin archivo previo.
+- **Modo Editor:** Permitir la creación de nodos `Person` y aristas `Relationship` desde el lienzo de React Flow sin archivo previo. (Implementado con Zustand y sincronización debounced).
+- **Sincronización en Tiempo Real:** Actualización optimista en el frontend y persistencia en PostgreSQL vía NestJS (`PATCH /gedcom/node/:id`, `POST /gedcom/relationship`, `DELETE /gedcom/node/:id`).
 - **Export Engine:** Servicio en el backend para generar un archivo `.ged` válido (Standard 7.0) a partir de los datos almacenados en PostgreSQL.
 - **Interacción:** Implementación de "Quick-add buttons" en los Custom Nodes para agilizar la expansión del árbol manualmente.
 

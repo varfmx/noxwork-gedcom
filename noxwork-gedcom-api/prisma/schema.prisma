@@ -1,0 +1,65 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tree {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  persons       Person[]
+  relationships Relationship[]
+}
+
+model Person {
+  id        String    @id @default(uuid())
+  gedcomId  String? // Original ID (@I1@)
+  firstName String
+  lastName  String?
+  gender    String?
+  birthDate DateTime?
+  metadata  Json? // To store extra GEDCOM data
+
+  treeId String
+  tree   Tree   @relation(fields: [treeId], references: [id], onDelete: Cascade)
+
+  // Relationships: A node can be the source or target of many edges
+  relsAsSource Relationship[] @relation("SourcePerson")
+  relsAsTarget Relationship[] @relation("TargetPerson")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @default(now())
+
+  @@unique([treeId, gedcomId]) // Ensure gedcomId is unique per tree
+}
+
+model Relationship {
+  id      String  @id @default(uuid())
+  type    String // PARENT, SPOUSE, SIBLING
+  subType String? // Ex: "BIOLOGICAL", "ADOPTIVE"
+
+  treeId String
+  tree   Tree   @relation(fields: [treeId], references: [id], onDelete: Cascade)
+
+  sourceId String
+  source   Person @relation("SourcePerson", fields: [sourceId], references: [id], onDelete: Cascade)
+
+  targetId String
+  target   Person @relation("TargetPerson", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@index([sourceId, targetId])
+}

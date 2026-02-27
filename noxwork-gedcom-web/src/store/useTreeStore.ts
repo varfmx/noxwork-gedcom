@@ -52,19 +52,43 @@ const showToast = (message: string, isError = false) => {
     }, 3000);
 };
 
-const syncNodePosition = debounce(async (id: string, position: { x: number, y: number }) => {
+// Map to hold pending updates and their snapshots for rollback
+const pendingPositionUpdates = new Map<string, {
+    position: { x: number, y: number },
+    lastUpdatedAt: string,
+    snapshot: Node<PersonNodeData>
+}>();
+
+const flushPositionUpdates = debounce(async () => {
+    if (pendingPositionUpdates.size === 0) return;
+
+    const updatesToProcess = Array.from(pendingPositionUpdates.entries()).map(([id, data]) => ({
+        id,
+        position: data.position,
+        lastUpdatedAt: data.lastUpdatedAt,
+    }));
+
+    const snapshots = Array.from(pendingPositionUpdates.values()).map(data => data.snapshot);
+
+    // Clear pending updates immediately so new ones can queue up
+    pendingPositionUpdates.clear();
+
     try {
-        const res = await fetch(`${API_BASE}/gedcom/node/${id}`, {
+        const res = await fetch(`${API_BASE}/nodes/batch`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ metadata: { position } }),
+            body: JSON.stringify({ updates: updatesToProcess }),
         });
-        if (!res.ok) throw new Error('Failed to sync position');
+
+        if (!res.ok) throw new Error('Failed to sync positions');
     } catch (err) {
         console.error(err);
-        showToast('Failed to save node position', true);
+        showToast('Failed to save node positions. Rolling back.', true);
+
+        // Rollback logic
+        useTreeStore.getState().rollbackNodes(snapshots);
     }
-}, 2000);
+}, 1000);
 
 /* ─── Store Interface ────────────────────────────────────────── */
 
@@ -87,6 +111,7 @@ interface TreeState {
     addNode: (node: Node<PersonNodeData>) => Promise<void>;
     removeNode: (id: string) => Promise<void>;
     addEdge: (edge: Edge) => Promise<void>;
+    rollbackNodes: (snapshots: Node<PersonNodeData>[]) => void;
 }
 
 /* ─── Data Mapping ───────────────────────────────────────────── */
@@ -374,9 +399,28 @@ export const useTreeStore = create<TreeState>((set, get) => ({
 
         // Handle position sync
         changes.forEach((change) => {
-            if (change.type === 'position' && change.position && !change.dragging) {
-                // Dragging stopped, trigger debounced sync
-                syncNodePosition(change.id, change.position);
+            if (change.type === 'position' && change.position) {
+                const originalNode = currentNodes.find(n => n.id === change.id);
+
+                if (originalNode) {
+                    if (!pendingPositionUpdates.has(change.id)) {
+                        // Store the snapshot before the first move in this sequence
+                        pendingPositionUpdates.set(change.id, {
+                            position: change.position,
+                            lastUpdatedAt: new Date().toISOString(), // Used for concurrency control
+                            snapshot: originalNode
+                        });
+                    } else {
+                        // Update the pending position
+                        const pending = pendingPositionUpdates.get(change.id)!;
+                        pending.position = change.position;
+                    }
+                }
+
+                if (!change.dragging) {
+                    // Dragging stopped, trigger debounced sync
+                    flushPositionUpdates();
+                }
             }
 
             // Handle deletion from UI (e.g. pressing Backspace)
@@ -412,8 +456,13 @@ export const useTreeStore = create<TreeState>((set, get) => ({
 
         // Sync all new positions after layout
         layouted.forEach(node => {
-            syncNodePosition(node.id, node.position);
+            pendingPositionUpdates.set(node.id, {
+                position: node.position,
+                lastUpdatedAt: new Date().toISOString(),
+                snapshot: node
+            });
         });
+        flushPositionUpdates();
     },
 
     reset: () => {
@@ -428,6 +477,13 @@ export const useTreeStore = create<TreeState>((set, get) => ({
     },
 
     // --- Sync Actions ---
+
+    rollbackNodes: (snapshots: Node<PersonNodeData>[]) => {
+        const snapshotMap = new Map(snapshots.map(s => [s.id, s]));
+        set({
+            nodes: get().nodes.map(n => snapshotMap.has(n.id) ? snapshotMap.get(n.id)! : n)
+        });
+    },
 
     addNode: async (node: Node<PersonNodeData>) => {
         const previousNodes = get().nodes;

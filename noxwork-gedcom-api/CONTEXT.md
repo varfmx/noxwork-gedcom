@@ -1,7 +1,7 @@
 # noxwork-gedcom-api — Project Context
 
-> **Last updated:** 2026-02-21
-> **Status:** Phase 2 — Relationships engine ✅
+> **Last updated:** 2026-02-26
+> **Status:** Phase 3 — Prisma Integration & Editor Sync ✅
 > **Runtime:** NestJS 11 + TypeScript 5.7 (strict mode)
 > **Node target:** ES2023
 
@@ -14,9 +14,9 @@
 The API is responsible for:
 - Receiving and parsing `.ged` (GEDCOM) genealogy files
 - Converting GEDCOM plain text into structured JSON (individuals, families, metadata)
-- Persisting parsed results by session for retrieval
+- Persisting parsed results and tree structures via Prisma ORM to PostgreSQL
 - Computing complex family relationships with multi-role overlap detection (uncle/cousin/pedigree collapse)
-- (Future) Calculating layout coordinates for the frontend graph visualization
+- Handling real-time editor sync (adding, updating, deleting nodes and relationships)
 
 The **frontend** (React 19 + Vite + React Flow) will consume this API to render interactive family tree visualizations.
 
@@ -32,7 +32,7 @@ The **frontend** (React 19 + Vite + React Flow) will consume this API to render 
 | Package Mgr    | npm                                 |                                             |
 | Testing        | Jest + Supertest                    | Unit + e2e                                  |
 | Linting        | ESLint 9 + Prettier                 |                                             |
-| DB (planned)   | PostgreSQL 16+ via Prisma ORM       | Not yet integrated                          |
+| DB             | PostgreSQL 16+ via Prisma ORM       | Integrated with `Tree`, `Person`, `Relationship` models |
 | Cache (planned)| Redis                               | For large tree layout caching (>5000 nodes) |
 
 ---
@@ -49,8 +49,8 @@ noxwork-gedcom-api/
 │   │
 │   └── gedcom/                                  # ══ GEDCOM Domain Module ══
 │       ├── gedcom.module.ts                     # NestJS module with DI wiring
-│       ├── gedcom.controller.ts                 # REST endpoints
-│       ├── gedcom.service.ts                    # Business logic orchestrator
+│       ├── gedcom.controller.ts                 # REST endpoints (upload, session, node/edge sync)
+│       ├── gedcom.service.ts                    # Business logic orchestrator & Prisma transactions
 │       │
 │       ├── dto/                                 # Data Transfer Objects
 │       │   ├── index.ts                         # Barrel export
@@ -73,6 +73,9 @@ noxwork-gedcom-api/
 │           ├── index.ts                         # Barrel export (uses `export type` for interface)
 │           ├── gedcom.repository.ts             # GedcomRepository interface + GEDCOM_REPOSITORY Symbol token
 │           └── in-memory-gedcom.repository.ts   # InMemoryGedcomRepository (Map-based, dev only)
+│
+├── prisma/                                      # Prisma ORM schema and migrations (at monorepo root)
+│   └── schema.prisma                            # Tree, Person, Relationship models
 │
 ├── test/                                        # e2e tests
 │   ├── jest-e2e.json

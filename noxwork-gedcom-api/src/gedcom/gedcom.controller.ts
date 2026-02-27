@@ -6,6 +6,8 @@ import {
     HttpStatus,
     Param,
     Post,
+    Patch,
+    Delete,
 } from '@nestjs/common';
 import { GedcomService } from './gedcom.service';
 import { UploadGedcomDto } from './dto';
@@ -68,5 +70,38 @@ export class GedcomController {
                 metadata: result.metadata,
             },
         };
+    }
+
+    /**
+     * PATCH /gedcom/node/:id
+     *
+     * Updates a person's details or coordinates.
+     */
+    @Patch('node/:id')
+    async updateNode(@Param('id') id: string, @Body() data: any) {
+        const updatedNode = await this.gedcomService.updateNode(id, data);
+        return { success: true, data: updatedNode };
+    }
+
+    /**
+     * POST /gedcom/relationship
+     *
+     * Creates a new connection between two existing nodes.
+     */
+    @Post('relationship')
+    async createRelationship(@Body() data: { treeId: string; type: string; subType?: string; sourceId: string; targetId: string }) {
+        const relationship = await this.gedcomService.createRelationship(data);
+        return { success: true, data: relationship };
+    }
+
+    /**
+     * DELETE /gedcom/node/:id
+     *
+     * Removes a person and all their associated relationships.
+     */
+    @Delete('node/:id')
+    async deleteNode(@Param('id') id: string) {
+        await this.gedcomService.deleteNode(id);
+        return { success: true, message: 'Node deleted successfully' };
     }
 }
