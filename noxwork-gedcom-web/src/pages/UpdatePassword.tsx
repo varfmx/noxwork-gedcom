@@ -1,28 +1,30 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
 import { useToast } from '../components/Toast';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
 
 /* ─── Validation ─────────────────────────────────────────────── */
 
 interface PasswordStrength {
     score: number;          // 0-5
-    label: string;
+    labelKey: string;
     color: string;
 }
 
 function validatePassword(password: string): string | null {
-    if (password.length < 8)              return 'Password must be at least 8 characters.';
-    if (!/[A-Z]/.test(password))          return 'Must include at least one uppercase letter.';
-    if (!/[a-z]/.test(password))          return 'Must include at least one lowercase letter.';
-    if (!/[0-9]/.test(password))          return 'Must include at least one number.';
-    if (!/[^A-Za-z0-9]/.test(password))   return 'Must include at least one special character (e.g. !@#$%).';
+    if (password.length < 8)              return 'auth.validation.minLength';
+    if (!/[A-Z]/.test(password))          return 'auth.validation.uppercase';
+    if (!/[a-z]/.test(password))          return 'auth.validation.lowercase';
+    if (!/[0-9]/.test(password))          return 'auth.validation.number';
+    if (!/[^A-Za-z0-9]/.test(password))   return 'auth.validation.special';
     return null;
 }
 
 function getPasswordStrength(password: string): PasswordStrength {
-    if (!password) return { score: 0, label: '', color: '' };
+    if (!password) return { score: 0, labelKey: '', color: '' };
     let score = 0;
     if (password.length >= 8)             score++;
     if (password.length >= 12)            score++;
@@ -30,10 +32,10 @@ function getPasswordStrength(password: string): PasswordStrength {
     if (/[0-9]/.test(password))           score++;
     if (/[^A-Za-z0-9]/.test(password))   score++;
 
-    if (score <= 2) return { score, label: 'Weak',   color: 'bg-nox-danger' };
-    if (score === 3) return { score, label: 'Fair',   color: 'bg-nox-warning' };
-    if (score === 4) return { score, label: 'Good',   color: 'bg-nox-cobalt-light' };
-    return              { score, label: 'Strong', color: 'bg-nox-orange' };
+    if (score <= 2) return { score, labelKey: 'auth.strength.weak',   color: 'bg-nox-danger' };
+    if (score === 3) return { score, labelKey: 'auth.strength.fair',   color: 'bg-nox-warning' };
+    if (score === 4) return { score, labelKey: 'auth.strength.good',   color: 'bg-nox-cobalt-light' };
+    return              { score, labelKey: 'auth.strength.strong', color: 'bg-nox-orange' };
 }
 
 /* ─── Component ──────────────────────────────────────────────── */
@@ -50,6 +52,7 @@ export default function UpdatePassword() {
     const navigate = useNavigate();
     const { updatePassword } = useAuthStore();
     const { addToast } = useToast();
+    const { t } = useTranslation();
 
     const [sessionReady, setSessionReady] = useState(false);
     const [password, setPassword] = useState('');
@@ -95,7 +98,7 @@ export default function UpdatePassword() {
             return;
         }
         if (password !== confirm) {
-            addToast('Passwords do not match.', 'error');
+            addToast(t('auth.passwordsMismatch'), 'error');
             return;
         }
 
@@ -105,7 +108,7 @@ export default function UpdatePassword() {
         if (result.error) {
             addToast(result.error, 'error');
         } else {
-            addToast('Password updated successfully! Redirecting…', 'success');
+            addToast(t('auth.toast.passwordUpdated'), 'success');
             setTimeout(() => navigate('/dashboard', { replace: true }), 1500);
         }
         setIsSubmitting(false);
@@ -117,7 +120,7 @@ export default function UpdatePassword() {
             <div className="flex h-screen w-screen items-center justify-center bg-nox-surface">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-10 h-10 rounded-full border-2 border-nox-orange border-t-transparent animate-spin" />
-                    <p className="text-nox-text-muted text-sm">Verifying your reset link…</p>
+                    <p className="text-nox-text-muted text-sm">{t('auth.verifyingLink')}</p>
                 </div>
             </div>
         );
@@ -135,6 +138,11 @@ export default function UpdatePassword() {
                 }}
             />
 
+            {/* Language switcher */}
+            <div className="fixed top-4 right-4 z-10">
+                <LanguageSwitcher />
+            </div>
+
             <div className="relative w-full max-w-sm">
                 {/* Glow */}
                 <div className="absolute -inset-1 rounded-2xl bg-gradient-to-br from-nox-cobalt/30 to-nox-orange/20 blur-xl" />
@@ -149,10 +157,10 @@ export default function UpdatePassword() {
                         />
                         <div className="text-center">
                             <h1 className="text-xl font-bold text-nox-text tracking-tight">
-                                New Password
+                                {t('auth.newPassword')}
                             </h1>
                             <p className="text-xs text-nox-text-muted mt-0.5">
-                                Choose a secure password for your account
+                                {t('auth.newPasswordSubtitle')}
                             </p>
                         </div>
                     </div>
@@ -161,14 +169,14 @@ export default function UpdatePassword() {
                         {/* Password field */}
                         <div>
                             <label className="text-xs font-semibold text-nox-text-muted uppercase tracking-wider block mb-1.5">
-                                New Password
+                                {t('auth.newPasswordLabel')}
                             </label>
                             <div className="relative">
                                 <input
                                     type={showPassword ? 'text' : 'password'}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Min. 8 chars, upper, number, symbol"
+                                    placeholder={t('auth.passwordPlaceholder')}
                                     autoFocus
                                     className={`
                                         w-full bg-nox-surface border rounded-xl
@@ -217,28 +225,28 @@ export default function UpdatePassword() {
                                         strength.score === 4 ? 'text-nox-cobalt-light' :
                                         'text-nox-orange'
                                     }`}>
-                                        {strength.label}
+                                        {strength.labelKey ? t(strength.labelKey) : ''}
                                     </p>
                                 </div>
                             )}
 
                             {/* Inline error */}
                             {validationError && password && (
-                                <p className="mt-1.5 text-xs text-nox-danger">{validationError}</p>
+                                <p className="mt-1.5 text-xs text-nox-danger">{t(validationError)}</p>
                             )}
                         </div>
 
                         {/* Confirm password */}
                         <div>
                             <label className="text-xs font-semibold text-nox-text-muted uppercase tracking-wider block mb-1.5">
-                                Confirm Password
+                                {t('auth.confirmPassword')}
                             </label>
                             <div className="relative">
                                 <input
                                     type={showConfirm ? 'text' : 'password'}
                                     value={confirm}
                                     onChange={(e) => setConfirm(e.target.value)}
-                                    placeholder="Re-enter your new password"
+                                    placeholder={t('auth.confirmPasswordPlaceholder')}
                                     className={`
                                         w-full bg-nox-surface border rounded-xl
                                         px-4 py-2.5 pr-10 text-sm text-nox-text placeholder:text-nox-text-muted
@@ -267,18 +275,18 @@ export default function UpdatePassword() {
                                 </button>
                             </div>
                             {confirm && password !== confirm && (
-                                <p className="mt-1.5 text-xs text-nox-danger">Passwords do not match.</p>
+                                <p className="mt-1.5 text-xs text-nox-danger">{t('auth.passwordsMismatch')}</p>
                             )}
                         </div>
 
                         {/* Requirements list */}
                         <ul className="text-[11px] text-nox-text-muted space-y-1 pl-1">
                             {[
-                                { test: password.length >= 8,           label: 'At least 8 characters' },
-                                { test: /[A-Z]/.test(password),          label: 'One uppercase letter' },
-                                { test: /[a-z]/.test(password),          label: 'One lowercase letter' },
-                                { test: /[0-9]/.test(password),          label: 'One number' },
-                                { test: /[^A-Za-z0-9]/.test(password),   label: 'One special character' },
+                                { test: password.length >= 8,           label: t('auth.requirements.chars') },
+                                { test: /[A-Z]/.test(password),          label: t('auth.requirements.uppercase') },
+                                { test: /[a-z]/.test(password),          label: t('auth.requirements.lowercase') },
+                                { test: /[0-9]/.test(password),          label: t('auth.requirements.number') },
+                                { test: /[^A-Za-z0-9]/.test(password),   label: t('auth.requirements.special') },
                             ].map(({ test, label }) => (
                                 <li key={label} className={`flex items-center gap-1.5 transition-colors ${test ? 'text-nox-orange' : ''}`}>
                                     <span>{test ? '✓' : '·'}</span>
@@ -303,7 +311,7 @@ export default function UpdatePassword() {
                                 transition-all duration-200
                             "
                         >
-                            {isSubmitting ? 'Updating…' : 'Set New Password'}
+                            {isSubmitting ? t('auth.updating') : t('auth.setNewPassword')}
                         </button>
                     </form>
                 </div>

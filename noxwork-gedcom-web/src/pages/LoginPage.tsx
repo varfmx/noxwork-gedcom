@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/useAuthStore';
 import { useToast } from '../components/Toast';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
 
 /* ─── Auth mode ──────────────────────────────────────────────── */
 
@@ -19,6 +21,7 @@ export default function LoginPage() {
     const { signInWithGoogle, signInWithEmail, signUpWithEmail, resendConfirmation, isLoading } =
         useAuthStore();
     const { addToast } = useToast();
+    const { t } = useTranslation();
 
     const [mode, setMode] = useState<AuthMode>('sign-in');
     const [email, setEmail] = useState('');
@@ -47,7 +50,7 @@ export default function LoginPage() {
                 addToast(result.error, 'error');
             } else {
                 setEmailJustRegistered(email.trim().toLowerCase());
-                addToast('Account created! Check your inbox to confirm your email.', 'success');
+                addToast(t('auth.toast.accountCreated'), 'success');
             }
         }
         setIsSubmitting(false);
@@ -57,7 +60,7 @@ export default function LoginPage() {
     const handleResend = async () => {
         const target = emailJustRegistered ?? email.trim().toLowerCase();
         if (!target) {
-            addToast('Please enter your email address first.', 'warning');
+            addToast(t('auth.toast.enterEmail'), 'warning');
             return;
         }
         setIsResending(true);
@@ -65,7 +68,7 @@ export default function LoginPage() {
         if (result.error) {
             addToast(result.error, 'error');
         } else {
-            addToast('Confirmation email resent! Check your inbox.', 'success');
+            addToast(t('auth.toast.confirmationResent'), 'success');
         }
         setIsResending(false);
     };
@@ -90,6 +93,11 @@ export default function LoginPage() {
                 }}
             />
 
+            {/* Language switcher */}
+            <div className="fixed top-4 right-4 z-10">
+                <LanguageSwitcher />
+            </div>
+
             {/* Card */}
             <div className="relative w-full max-w-sm">
                 {/* Glow */}
@@ -108,8 +116,8 @@ export default function LoginPage() {
                                 Noxwork GEDCOM
                             </h1>
                             <p className="text-xs text-nox-text-muted mt-0.5">
-                                Genealogy Visualization Platform
-                            </p>
+                                    {t('auth.subtitle')}
+                                </p>
                         </div>
                     </div>
 
@@ -126,7 +134,7 @@ export default function LoginPage() {
                                         : 'text-nox-text-muted hover:text-nox-text'}
                                 `}
                             >
-                                {m === 'sign-in' ? 'Sign In' : 'Register'}
+                                {m === 'sign-in' ? t('auth.signIn') : t('auth.register')}
                             </button>
                         ))}
                     </div>
@@ -135,9 +143,7 @@ export default function LoginPage() {
                     {emailJustRegistered && (
                         <div className="mb-5 rounded-xl border border-nox-orange/40 bg-nox-orange/10 px-4 py-3">
                             <p className="text-xs text-nox-orange leading-relaxed text-center">
-                                ✉ Confirmation email sent to{' '}
-                                <span className="font-semibold">{emailJustRegistered}</span>.
-                                Please verify your account before signing in.
+                                {t('auth.confirmationSentTo', { email: emailJustRegistered })}
                             </p>
                         </div>
                     )}
@@ -152,7 +158,7 @@ export default function LoginPage() {
                                     type="text"
                                     value={firstName}
                                     onChange={(e) => setFirstName(e.target.value)}
-                                    placeholder="First name"
+                                    placeholder={t('auth.firstName')}
                                     required
                                     autoComplete="given-name"
                                     className="
@@ -166,7 +172,7 @@ export default function LoginPage() {
                                     type="text"
                                     value={lastName}
                                     onChange={(e) => setLastName(e.target.value)}
-                                    placeholder="Last name"
+                                    placeholder={t('auth.lastName')}
                                     required
                                     autoComplete="family-name"
                                     className="
@@ -184,7 +190,7 @@ export default function LoginPage() {
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                placeholder="Email address"
+                                placeholder={t('auth.emailAddress')}
                                 required
                                 autoComplete="email"
                                 className="
@@ -200,7 +206,7 @@ export default function LoginPage() {
                                 type={showPassword ? 'text' : 'password'}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Password"
+                                placeholder={t('auth.password')}
                                 required
                                 autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
                                 className="
@@ -236,7 +242,7 @@ export default function LoginPage() {
                                     to="/forgot-password"
                                     className="text-[11px] text-nox-text-muted hover:text-nox-orange transition-colors"
                                 >
-                                    Forgot password?
+                                    {t('auth.forgotPassword')}
                                 </Link>
                             </div>
                         )}
@@ -258,8 +264,8 @@ export default function LoginPage() {
                             "
                         >
                             {isSubmitting
-                                ? (mode === 'sign-in' ? 'Signing in…' : 'Creating account…')
-                                : (mode === 'sign-in' ? 'Sign In' : 'Create Account')}
+                                ? (mode === 'sign-in' ? t('auth.signingIn') : t('auth.creatingAccount'))
+                                : (mode === 'sign-in' ? t('auth.signIn') : t('auth.createAccount'))}
                         </button>
                     </form>
 
@@ -270,14 +276,14 @@ export default function LoginPage() {
                             disabled={isResending}
                             className="text-[11px] text-nox-text-muted hover:text-nox-orange transition-colors disabled:opacity-50"
                         >
-                            {isResending ? 'Sending…' : "Didn't receive confirmation email? Resend it"}
+                            {isResending ? t('auth.resending') : t('auth.resendConfirmation')}
                         </button>
                     </div>
 
                     {/* ── Divider ── */}
                     <div className="flex items-center gap-3 mb-4">
                         <div className="flex-1 h-px bg-nox-surface-lighter" />
-                        <span className="text-[11px] text-nox-text-muted uppercase tracking-widest">or</span>
+                        <span className="text-[11px] text-nox-text-muted uppercase tracking-widest">{t('auth.or')}</span>
                         <div className="flex-1 h-px bg-nox-surface-lighter" />
                     </div>
 
@@ -302,23 +308,23 @@ export default function LoginPage() {
                             <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
                             <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                         </svg>
-                        <span>Continue with Google</span>
+                        <span>{t('auth.continueWithGoogle')}</span>
                     </button>
 
                     {/* Footer */}
                     <p className="text-center text-[11px] text-nox-text-muted mt-5 leading-relaxed">
                         {mode === 'sign-in' ? (
                             <>
-                                Don't have an account?{' '}
+                                {t('auth.noAccount')}{' '}
                                 <button onClick={toggleMode} className="text-nox-cobalt-light hover:underline font-medium">
-                                    Register
+                                    {t('auth.register')}
                                 </button>
                             </>
                         ) : (
                             <>
-                                Already have an account?{' '}
+                                {t('auth.hasAccount')}{' '}
                                 <button onClick={toggleMode} className="text-nox-cobalt-light hover:underline font-medium">
-                                    Sign in
+                                    {t('auth.signInLink')}
                                 </button>
                             </>
                         )}

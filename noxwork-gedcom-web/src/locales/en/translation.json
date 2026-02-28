@@ -87,8 +87,10 @@
     }
   },
   "auth": {
+    "subtitle": "Genealogy Visualization Platform",
     "register": "Register",
     "signIn": "Sign In",
+    "signInLink": "Sign in",
     "createAccount": "Create Account",
     "signingIn": "Signing in…",
     "creatingAccount": "Creating account…",
@@ -101,6 +103,53 @@
     "hasAccount": "Already have an account?",
     "continueWithGoogle": "Continue with Google",
     "resendConfirmation": "Didn't receive confirmation email? Resend it",
-    "resending": "Sending…"
+    "resending": "Sending…",
+    "or": "or",
+    "confirmationSentTo": "✉ Confirmation email sent to {{email}}. Please verify your account before signing in.",
+    "resetPassword": "Reset Password",
+    "resetPasswordSubtitle": "We'll send you a secure link to your inbox",
+    "sendResetLink": "Send Reset Link",
+    "sending": "Sending…",
+    "checkEmailMsg": "Check {{email}} for a password reset link. It may take a minute to arrive.",
+    "spamTip": "Don't see it? Check your spam folder or",
+    "tryAgain": "try again",
+    "rememberPassword": "Remember your password?",
+    "newPassword": "New Password",
+    "newPasswordSubtitle": "Choose a secure password for your account",
+    "newPasswordLabel": "New Password",
+    "passwordPlaceholder": "Min. 8 chars, upper, number, symbol",
+    "confirmPassword": "Confirm Password",
+    "confirmPasswordPlaceholder": "Re-enter your new password",
+    "strength": {
+      "weak": "Weak",
+      "fair": "Fair",
+      "good": "Good",
+      "strong": "Strong"
+    },
+    "requirements": {
+      "chars": "At least 8 characters",
+      "uppercase": "One uppercase letter",
+      "lowercase": "One lowercase letter",
+      "number": "One number",
+      "special": "One special character"
+    },
+    "setNewPassword": "Set New Password",
+    "verifyingLink": "Verifying your reset link…",
+    "updating": "Updating…",
+    "passwordsMismatch": "Passwords do not match.",
+    "toast": {
+      "accountCreated": "Account created! Check your inbox to confirm your email.",
+      "resetSent": "Password reset email sent! Check your inbox.",
+      "confirmationResent": "Confirmation email resent! Check your inbox.",
+      "enterEmail": "Please enter your email address first.",
+      "passwordUpdated": "Password updated successfully! Redirecting…"
+    },
+    "validation": {
+      "minLength": "Password must be at least 8 characters.",
+      "uppercase": "Must include at least one uppercase letter.",
+      "lowercase": "Must include at least one lowercase letter.",
+      "number": "Must include at least one number.",
+      "special": "Must include at least one special character (e.g. !@#$%)."
+    }
   }
 }

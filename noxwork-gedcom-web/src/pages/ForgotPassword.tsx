@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/useAuthStore';
 import { useToast } from '../components/Toast';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
 
 /**
  * ForgotPassword — Sends a password reset email via Supabase Auth.
@@ -13,6 +15,7 @@ import { useToast } from '../components/Toast';
 export default function ForgotPassword() {
     const { resetPasswordForEmail } = useAuthStore();
     const { addToast } = useToast();
+    const { t } = useTranslation();
     const [email, setEmail] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [sent, setSent] = useState(false);
@@ -28,7 +31,7 @@ export default function ForgotPassword() {
             addToast(result.error, 'error');
         } else {
             setSent(true);
-            addToast('Password reset email sent! Check your inbox.', 'success');
+            addToast(t('auth.toast.resetSent'), 'success');
         }
         setIsSubmitting(false);
     };
@@ -45,6 +48,11 @@ export default function ForgotPassword() {
                 }}
             />
 
+            {/* Language switcher */}
+            <div className="fixed top-4 right-4 z-10">
+                <LanguageSwitcher />
+            </div>
+
             <div className="relative w-full max-w-sm">
                 {/* Glow */}
                 <div className="absolute -inset-1 rounded-2xl bg-gradient-to-br from-nox-cobalt/30 to-nox-orange/20 blur-xl" />
@@ -59,10 +67,10 @@ export default function ForgotPassword() {
                         />
                         <div className="text-center">
                             <h1 className="text-xl font-bold text-nox-text tracking-tight">
-                                Reset Password
+                                {t('auth.resetPassword')}
                             </h1>
                             <p className="text-xs text-nox-text-muted mt-0.5">
-                                We'll send you a secure link to your inbox
+                                {t('auth.resetPasswordSubtitle')}
                             </p>
                         </div>
                     </div>
@@ -76,16 +84,15 @@ export default function ForgotPassword() {
                                 </svg>
                             </div>
                             <p className="text-sm text-nox-text text-center leading-relaxed">
-                                Check <span className="text-nox-orange font-semibold">{email}</span> for a
-                                password reset link. It may take a minute to arrive.
+                                {t('auth.checkEmailMsg', { email })}
                             </p>
                             <p className="text-xs text-nox-text-muted text-center">
-                                Don't see it? Check your spam folder or{' '}
+                                {t('auth.spamTip')}{' '}
                                 <button
                                     onClick={() => setSent(false)}
                                     className="text-nox-orange hover:underline font-medium"
                                 >
-                                    try again
+                                    {t('auth.tryAgain')}
                                 </button>
                                 .
                             </p>
@@ -95,7 +102,7 @@ export default function ForgotPassword() {
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
                                 <label className="text-xs font-semibold text-nox-text-muted uppercase tracking-wider block mb-1.5">
-                                    Email Address
+                                    {t('auth.emailAddress')}
                                 </label>
                                 <input
                                     type="email"
@@ -124,19 +131,19 @@ export default function ForgotPassword() {
                                     transition-all duration-200
                                 "
                             >
-                                {isSubmitting ? 'Sending…' : 'Send Reset Link'}
+                                {isSubmitting ? t('auth.sending') : t('auth.sendResetLink')}
                             </button>
                         </form>
                     )}
 
                     {/* Back to login */}
                     <p className="text-center text-xs text-nox-text-muted mt-6">
-                        Remember your password?{' '}
+                        {t('auth.rememberPassword')}{' '}
                         <Link
                             to="/login"
                             className="text-nox-cobalt-light hover:underline font-medium"
                         >
-                            Sign in
+                            {t('auth.signInLink')}
                         </Link>
                     </p>
                 </div>

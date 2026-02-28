@@ -87,8 +87,10 @@
     }
   },
   "auth": {
+    "subtitle": "Plataforma de Visualización Genealógica",
     "register": "Registrarse",
     "signIn": "Iniciar Sesión",
+    "signInLink": "Inicia sesión",
     "createAccount": "Crear Cuenta",
     "signingIn": "Iniciando sesión…",
     "creatingAccount": "Creando cuenta…",
@@ -101,6 +103,53 @@
     "hasAccount": "¿Ya tienes cuenta?",
     "continueWithGoogle": "Continuar con Google",
     "resendConfirmation": "¿No recibiste el correo? Reenviar",
-    "resending": "Enviando…"
+    "resending": "Enviando…",
+    "or": "o",
+    "confirmationSentTo": "✉ Correo de confirmación enviado a {{email}}. Por favor verifica tu cuenta antes de iniciar sesión.",
+    "resetPassword": "Restablecer Contraseña",
+    "resetPasswordSubtitle": "Te enviaremos un enlace seguro a tu bandeja de entrada",
+    "sendResetLink": "Enviar Enlace de Restablecimiento",
+    "sending": "Enviando…",
+    "checkEmailMsg": "Revisa {{email}} para el enlace de restablecimiento. Puede tardar un momento en llegar.",
+    "spamTip": "¿No lo ves? Revisa tu carpeta de spam o",
+    "tryAgain": "inténtalo de nuevo",
+    "rememberPassword": "¿Recuerdas tu contraseña?",
+    "newPassword": "Nueva Contraseña",
+    "newPasswordSubtitle": "Elige una contraseña segura para tu cuenta",
+    "newPasswordLabel": "Nueva Contraseña",
+    "passwordPlaceholder": "Mín. 8 caracteres, mayúscula, número, símbolo",
+    "confirmPassword": "Confirmar Contraseña",
+    "confirmPasswordPlaceholder": "Vuelve a ingresar tu nueva contraseña",
+    "strength": {
+      "weak": "Débil",
+      "fair": "Regular",
+      "good": "Buena",
+      "strong": "Fuerte"
+    },
+    "requirements": {
+      "chars": "Al menos 8 caracteres",
+      "uppercase": "Una letra mayúscula",
+      "lowercase": "Una letra minúscula",
+      "number": "Un número",
+      "special": "Un carácter especial"
+    },
+    "setNewPassword": "Establecer Nueva Contraseña",
+    "verifyingLink": "Verificando tu enlace de restablecimiento…",
+    "updating": "Actualizando…",
+    "passwordsMismatch": "Las contraseñas no coinciden.",
+    "toast": {
+      "accountCreated": "¡Cuenta creada! Revisa tu bandeja para confirmar tu correo.",
+      "resetSent": "¡Correo de restablecimiento enviado! Revisa tu bandeja.",
+      "confirmationResent": "¡Correo de confirmación reenviado! Revisa tu bandeja.",
+      "enterEmail": "Por favor ingresa tu correo electrónico primero.",
+      "passwordUpdated": "¡Contraseña actualizada! Redirigiendo…"
+    },
+    "validation": {
+      "minLength": "La contraseña debe tener al menos 8 caracteres.",
+      "uppercase": "Debe incluir al menos una letra mayúscula.",
+      "lowercase": "Debe incluir al menos una letra minúscula.",
+      "number": "Debe incluir al menos un número.",
+      "special": "Debe incluir al menos un carácter especial (ej. !@#$%)."
+    }
   }
 }
