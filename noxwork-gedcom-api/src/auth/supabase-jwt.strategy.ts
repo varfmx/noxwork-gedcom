@@ -1,21 +1,22 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { passportJwtSecret } from 'jwks-rsa';
 import type { JwtPayload, AuthenticatedUser } from './interfaces';
 
 /**
  * SupabaseJwtStrategy — validates Bearer tokens issued by Supabase Auth.
  *
- * Supabase signs JWTs with HS256 using the project's JWT secret
- * (`Settings → API → JWT Secret` in the Supabase dashboard).
- * Set it as `SUPABASE_JWT_SECRET` in your `.env` file.
+ * Newer Supabase projects sign JWTs with ES256 using asymmetric keys.
+ * We verify using the JWKS endpoint: {SUPABASE_URL}/auth/v1/.well-known/jwks.json
+ *
+ * Set SUPABASE_URL in your environment variables.
  *
  * Validation logic:
- *  1. passport-jwt automatically verifies the signature, `iat`, and `exp`.
- *  2. We additionally assert that `role === 'authenticated'` to reject
+ *  1. jwks-rsa fetches the public key matching the token's `kid`.
+ *  2. passport-jwt verifies the signature, `iat`, and `exp`.
+ *  3. We additionally assert that `role === 'authenticated'` to reject
  *     anon/service-role tokens from reaching project endpoints.
- *
- * The returned object is attached to `request.user` as `AuthenticatedUser`.
  */
 @Injectable()
 export class SupabaseJwtStrategy extends PassportStrategy(
@@ -23,18 +24,24 @@ export class SupabaseJwtStrategy extends PassportStrategy(
     'supabase-jwt',
 ) {
     constructor() {
+        const supabaseUrl = process.env.SUPABASE_URL;
+        if (!supabaseUrl) {
+            throw new Error(
+                '[AuthModule] SUPABASE_URL env variable is not set.',
+            );
+        }
+
         super({
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
             ignoreExpiration: false,
-            secretOrKey: process.env.SUPABASE_JWT_SECRET ?? '',
+            secretOrKeyProvider: passportJwtSecret({
+                cache: true,
+                rateLimit: true,
+                jwksRequestsPerMinute: 10,
+                jwksUri: `${supabaseUrl}/auth/v1/.well-known/jwks.json`,
+            }),
+            algorithms: ['ES256', 'RS256'],
         });
-
-        if (!process.env.SUPABASE_JWT_SECRET) {
-            throw new Error(
-                '[AuthModule] SUPABASE_JWT_SECRET env variable is not set. ' +
-                'Add it to your .env file (Supabase Dashboard → Settings → API → JWT Secret).',
-            );
-        }
     }
 
     /**
