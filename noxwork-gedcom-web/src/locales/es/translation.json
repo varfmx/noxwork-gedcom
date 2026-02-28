@@ -1,0 +1,106 @@
+{
+  "common": {
+    "signOut": "Cerrar sesión",
+    "back": "Volver",
+    "cancel": "Cancelar",
+    "loading": "Cargando…",
+    "error": "Error",
+    "optional": "(opcional)"
+  },
+  "dashboard": {
+    "greetingPrefix": "Bienvenido de nuevo,",
+    "nav": {
+      "newTree": "Nuevo árbol",
+      "searchPlaceholder": "Buscar proyectos…"
+    },
+    "projects": {
+      "title": "Mis Proyectos",
+      "subtitle_one": "{{count}} árbol genealógico",
+      "subtitle_other": "{{count}} árboles genealógicos",
+      "empty": "Gestiona tus árboles genealógicos",
+      "noMatch": "Ningún proyecto coincide con \"{{query}}\""
+    },
+    "table": {
+      "projectTitle": "Título del Proyecto",
+      "owner": "Propietario",
+      "nodes": "Nodos",
+      "lastModified": "Última Modificación",
+      "edges": "enlaces"
+    },
+    "actions": {
+      "download": "Descargar .ged",
+      "duplicate": "Duplicar",
+      "rename": "Renombrar",
+      "delete": "Eliminar",
+      "clearSearch": "Borrar búsqueda"
+    },
+    "modal": {
+      "title": "Nuevo Proyecto Genealógico",
+      "subtitle": "Crea un árbol vacío. Puedes subir un archivo GEDCOM después.",
+      "nameLabel": "Nombre del Proyecto",
+      "namePlaceholder": "ej. La Familia García",
+      "descLabel": "Descripción",
+      "descPlaceholder": "Breve descripción…",
+      "createTree": "Crear Árbol",
+      "creating": "Creando…"
+    },
+    "confirmation": {
+      "bannerTitle": "Esperando Confirmación de Correo",
+      "bannerSubtitle": "Por favor confirma tu correo electrónico {{email}} para obtener acceso completo.",
+      "resend": "Reenviar Correo",
+      "resending": "Enviando…"
+    },
+    "deleteConfirm": "¿Eliminar \"{{name}}\"? Esta acción no se puede deshacer.",
+    "footer": "© 2026 Noxwork Technologies — Laboratorio de Innovación en Ingeniería"
+  },
+  "visualizer": {
+    "sidebar": {
+      "subtitle": "Visualizador Genealógico",
+      "import": "Importar",
+      "legend": "Leyenda",
+      "projectActive": "Proyecto activo"
+    },
+    "legend": {
+      "male": "Masculino",
+      "female": "Femenino",
+      "unknown": "Desconocido",
+      "parentChild": "Padre → Hijo",
+      "spouse": "Cónyuge",
+      "multiRole": "Multi-rol"
+    },
+    "canvas": {
+      "noTree": "Sin Árbol Cargado",
+      "uploadHint": "Sube un archivo GEDCOM para visualizar tu árbol genealógico.",
+      "uploadDrag": "Arrastra y suelta un archivo",
+      "uploadDragSuffix": "al panel lateral.",
+      "backToDashboard": "← Volver al Panel",
+      "clearCanvas": "✕ Limpiar Lienzo"
+    },
+    "uploader": {
+      "dropHint": "Suelta el archivo .ged o haz clic para subir",
+      "format": "Formato GEDCOM 5.5 / 5.5.1",
+      "parsing": "Procesando GEDCOM...",
+      "parsedResults": "Resultados",
+      "individuals": "Individuos",
+      "families": "Familias",
+      "session": "Sesión"
+    }
+  },
+  "auth": {
+    "register": "Registrarse",
+    "signIn": "Iniciar Sesión",
+    "createAccount": "Crear Cuenta",
+    "signingIn": "Iniciando sesión…",
+    "creatingAccount": "Creando cuenta…",
+    "emailAddress": "Correo electrónico",
+    "password": "Contraseña",
+    "firstName": "Nombre",
+    "lastName": "Apellido",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "noAccount": "¿No tienes cuenta?",
+    "hasAccount": "¿Ya tienes cuenta?",
+    "continueWithGoogle": "Continuar con Google",
+    "resendConfirmation": "¿No recibiste el correo? Reenviar",
+    "resending": "Enviando…"
+  }
+}

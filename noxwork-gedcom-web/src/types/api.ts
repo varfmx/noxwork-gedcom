@@ -9,6 +9,8 @@ export interface UserProfile {
     email: string;
     firstName: string | null;
     lastName: string | null;
+    /** UI language preference stored in the Prisma DB: "en" | "es" */
+    language: string;
 }
 
 /* ─── Project / Dashboard Types ─────────────────────────────── */

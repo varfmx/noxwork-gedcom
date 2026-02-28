@@ -1,11 +1,13 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/useAuthStore';
 import { useProjectStore } from '../store/useProjectStore';
 import { useUserStore } from '../store/useUserStore';
 import { useToast } from '../components/Toast';
 import { UserAvatar } from '../components/UserAvatar';
 import { SkeletonText } from '../components/Skeleton';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { ProjectTable } from '../features/dashboard/ProjectTable';
 import { EmptyState } from '../features/dashboard/EmptyState';
 
@@ -17,6 +19,7 @@ interface CreateModalProps {
 
 function CreateProjectModal({ onClose }: CreateModalProps) {
     const { createProject } = useProjectStore();
+    const { t } = useTranslation();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,21 +45,21 @@ function CreateProjectModal({ onClose }: CreateModalProps) {
                 className="bg-nox-surface-light border border-nox-surface-lighter rounded-2xl shadow-2xl w-full max-w-md p-6"
                 onClick={(e) => e.stopPropagation()}
             >
-                <h2 className="text-lg font-bold text-nox-text mb-1">New Genealogy Project</h2>
+                <h2 className="text-lg font-bold text-nox-text mb-1">{t('dashboard.modal.title')}</h2>
                 <p className="text-nox-text-muted text-sm mb-5">
-                    Create an empty tree. You can upload a GEDCOM file later.
+                    {t('dashboard.modal.subtitle')}
                 </p>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="text-xs font-semibold text-nox-text-muted uppercase tracking-wider block mb-1.5">
-                            Project Name *
-                        </label>
-                        <input
-                            ref={inputRef}
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="e.g. The Johnson Family"
+                                {t('dashboard.modal.nameLabel')} *
+                            </label>
+                            <input
+                                ref={inputRef}
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder={t('dashboard.modal.namePlaceholder')}
                             maxLength={120}
                             className="
                                 w-full bg-nox-surface border border-nox-surface-lighter rounded-xl
@@ -69,12 +72,12 @@ function CreateProjectModal({ onClose }: CreateModalProps) {
 
                     <div>
                         <label className="text-xs font-semibold text-nox-text-muted uppercase tracking-wider block mb-1.5">
-                            Description <span className="normal-case font-normal">(optional)</span>
-                        </label>
-                        <textarea
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Brief description…"
+                                {t('dashboard.modal.descLabel')} <span className="normal-case font-normal">{t('common.optional')}</span>
+                            </label>
+                            <textarea
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                placeholder={t('dashboard.modal.descPlaceholder')}
                             rows={2}
                             maxLength={500}
                             className="
@@ -89,28 +92,28 @@ function CreateProjectModal({ onClose }: CreateModalProps) {
                     <div className="flex items-center gap-3 pt-1">
                         <button
                             type="button"
-                            onClick={onClose}
-                            className="
-                                flex-1 py-2.5 rounded-xl text-sm font-medium
-                                bg-nox-surface border border-nox-surface-lighter
-                                text-nox-text-muted hover:text-nox-text hover:border-nox-text-muted
-                                transition-colors duration-200
-                            "
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={!name.trim() || isSubmitting}
-                            className="
-                                flex-1 py-2.5 rounded-xl text-sm font-semibold
-                                bg-nox-orange hover:bg-nox-orange-dark text-white
-                                shadow-lg shadow-nox-orange/20
-                                disabled:opacity-50 disabled:cursor-not-allowed
-                                transition-all duration-200
-                            "
-                        >
-                            {isSubmitting ? 'Creating…' : 'Create Tree'}
+                                onClick={onClose}
+                                className="
+                                    flex-1 py-2.5 rounded-xl text-sm font-medium
+                                    bg-nox-surface border border-nox-surface-lighter
+                                    text-nox-text-muted hover:text-nox-text hover:border-nox-text-muted
+                                    transition-colors duration-200
+                                "
+                            >
+                                {t('common.cancel')}
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={!name.trim() || isSubmitting}
+                                className="
+                                    flex-1 py-2.5 rounded-xl text-sm font-semibold
+                                    bg-nox-orange hover:bg-nox-orange-dark text-white
+                                    shadow-lg shadow-nox-orange/20
+                                    disabled:opacity-50 disabled:cursor-not-allowed
+                                    transition-all duration-200
+                                "
+                            >
+                                {isSubmitting ? t('dashboard.modal.creating') : t('dashboard.modal.createTree')}
                         </button>
                     </div>
                 </form>
@@ -123,6 +126,7 @@ function CreateProjectModal({ onClose }: CreateModalProps) {
 
 export default function Dashboard() {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const { user, session, signOut, resendConfirmation } = useAuthStore();
     const { projects, isLoading, error, fetchProjects, clearError } = useProjectStore();
     const { profile, isLoadingProfile, fetchProfile } = useUserStore();
@@ -196,7 +200,7 @@ export default function Dashboard() {
                         <input
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search projects…"
+                            placeholder={t('dashboard.nav.searchPlaceholder')}
                             className="
                                 w-full bg-nox-surface-light border border-nox-surface-lighter rounded-lg
                                 pl-8 pr-3 py-1.5 text-xs text-nox-text placeholder:text-nox-text-muted
@@ -220,11 +224,12 @@ export default function Dashboard() {
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                             </svg>
-                            <span className="hidden sm:inline">New Tree</span>
+                            <span className="hidden sm:inline">{t('dashboard.nav.newTree')}</span>
                         </button>
 
                         {/* User avatar + sign out */}
                         <div className="flex items-center gap-2 pl-2 border-l border-nox-surface-lighter">
+                            <LanguageSwitcher />
                             <UserAvatar
                                 avatarUrl={avatarUrl}
                                 firstName={profile?.firstName}
@@ -236,7 +241,7 @@ export default function Dashboard() {
                             <button
                                 onClick={signOut}
                                 className="text-xs text-nox-text-muted hover:text-nox-danger transition-colors"
-                                title="Sign out"
+                                title={t('common.signOut')}
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
@@ -255,7 +260,7 @@ export default function Dashboard() {
                         <SkeletonText className="w-48 h-7 mb-1" />
                     ) : (
                         <h1 className="text-2xl font-bold text-nox-text">
-                            Welcome back,{' '}
+                            {t('dashboard.greetingPrefix')}{' '}
                             <span className="text-nox-orange">
                                 {profile?.firstName ?? user?.email?.split('@')[0] ?? 'there'}
                             </span>
@@ -268,12 +273,12 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between mb-6">
                     <div>
                         <h2 className="text-lg font-semibold text-nox-text">
-                            My Projects
+                            {t('dashboard.projects.title')}
                         </h2>
                         <p className="text-nox-text-muted text-sm mt-0.5">
                             {projects.length > 0
-                                ? `${projects.length} genealogy tree${projects.length !== 1 ? 's' : ''}`
-                                : 'Manage your genealogy trees'}
+                                ? t('dashboard.projects.subtitle', { count: projects.length })
+                                : t('dashboard.projects.empty')}
                         </p>
                     </div>
 
@@ -291,7 +296,7 @@ export default function Dashboard() {
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                             </svg>
-                            New Tree
+                            {t('dashboard.nav.newTree')}
                         </button>
                     )}
                 </div>
@@ -304,9 +309,9 @@ export default function Dashboard() {
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
                             </svg>
                             <div>
-                                <p className="text-sm font-semibold text-nox-warning">Awaiting Email Confirmation</p>
+                                <p className="text-sm font-semibold text-nox-warning">{t('dashboard.confirmation.bannerTitle')}</p>
                                 <p className="text-xs text-nox-text-muted mt-0.5">
-                                    Please confirm your email address{user?.email ? ` (${user.email})` : ''} to get full access.
+                                    {t('dashboard.confirmation.bannerSubtitle', { email: user?.email ? `(${user.email})` : '' })}
                                 </p>
                             </div>
                         </div>
@@ -320,7 +325,7 @@ export default function Dashboard() {
                                 disabled:opacity-50 disabled:cursor-not-allowed
                             "
                         >
-                            {isResending ? 'Sending…' : 'Resend Email'}
+                            {isResending ? t('dashboard.confirmation.resending') : t('dashboard.confirmation.resend')}
                         </button>
                     </div>
                 )}
@@ -349,12 +354,12 @@ export default function Dashboard() {
                             <EmptyState onCreated={() => fetchProjects()} />
                         ) : filtered.length === 0 ? (
                             <div className="text-center py-16 text-nox-text-muted">
-                                <p className="text-base">No projects match "{searchQuery}"</p>
+                                <p className="text-base">{t('dashboard.projects.noMatch', { query: searchQuery })}</p>
                                 <button
                                     onClick={() => setSearchQuery('')}
                                     className="mt-2 text-sm text-nox-cobalt-light hover:underline"
                                 >
-                                    Clear search
+                                    {t('dashboard.actions.clearSearch')}
                                 </button>
                             </div>
                         ) : (
@@ -371,7 +376,7 @@ export default function Dashboard() {
             {/* ── Footer ── */}
             <footer className="border-t border-nox-surface-lighter py-4 px-6">
                 <p className="text-center text-[11px] text-nox-text-muted">
-                    © 2026 Noxwork Technologies — Engineering Innovation Labs
+                    {t('dashboard.footer')}
                 </p>
             </footer>
 

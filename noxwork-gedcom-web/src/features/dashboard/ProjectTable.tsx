@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import type { ProjectSummary } from '../../types/api';
 import { useProjectStore } from '../../store/useProjectStore';
 import { useTreeStore } from '../../store/useTreeStore';
@@ -33,6 +34,7 @@ function ActionMenu({ project, onRename }: ActionMenuProps) {
     const [open, setOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
     const { deleteProject, duplicateProject } = useProjectStore();
+    const { t } = useTranslation();
 
     // Close on outside click
     useEffect(() => {
@@ -67,7 +69,7 @@ function ActionMenu({ project, onRename }: ActionMenuProps) {
 
     const handleDelete = async () => {
         setOpen(false);
-        if (!window.confirm(`Delete "${project.name}"? This cannot be undone.`)) return;
+        if (!window.confirm(t('dashboard.deleteConfirm', { name: project.name }))) return;
         await deleteProject(project.id);
     };
 
@@ -98,25 +100,25 @@ function ActionMenu({ project, onRename }: ActionMenuProps) {
                 ">
                     {[
                         {
-                            label: 'Download .ged',
+                            label: t('dashboard.actions.download'),
                             icon: '⬇',
                             action: handleDownload,
                             className: '',
                         },
                         {
-                            label: 'Duplicate',
+                            label: t('dashboard.actions.duplicate'),
                             icon: '⧉',
                             action: handleDuplicate,
                             className: '',
                         },
                         {
-                            label: 'Rename',
+                            label: t('dashboard.actions.rename'),
                             icon: '✎',
                             action: () => { setOpen(false); onRename(); },
                             className: '',
                         },
                         {
-                            label: 'Delete',
+                            label: t('dashboard.actions.delete'),
                             icon: '✕',
                             action: handleDelete,
                             className: 'text-nox-danger hover:bg-nox-danger/10',
@@ -199,6 +201,7 @@ interface ProjectTableProps {
 
 export function ProjectTable({ projects, ownerDisplayName, ownerAvatarUrl }: ProjectTableProps) {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const setActiveProject = useProjectStore((s) => s.setActiveProject);
     const reset = useTreeStore((s) => s.reset);
     const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -215,7 +218,7 @@ export function ProjectTable({ projects, ownerDisplayName, ownerAvatarUrl }: Pro
             <table className="w-full text-sm">
                 <thead>
                     <tr className="border-b border-nox-surface-lighter bg-nox-surface-light">
-                        {['Project Title', 'Owner', 'Nodes', 'Last Modified', ''].map((h) => (
+                        {[t('dashboard.table.projectTitle'), t('dashboard.table.owner'), t('dashboard.table.nodes'), t('dashboard.table.lastModified'), ''].map((h) => (
                             <th
                                 key={h}
                                 className="
@@ -292,7 +295,7 @@ export function ProjectTable({ projects, ownerDisplayName, ownerAvatarUrl }: Pro
                                     <span className="text-nox-text tabular-nums">{project.nodeCount}</span>
                                     {project.nodeCount > 0 && (
                                         <span className="text-nox-text-muted text-[11px]">
-                                            · {project.edgeCount} edges
+                                            · {project.edgeCount} {t('dashboard.table.edges')}
                                         </span>
                                     )}
                                 </div>

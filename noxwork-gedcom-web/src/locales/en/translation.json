@@ -1,0 +1,106 @@
+{
+  "common": {
+    "signOut": "Sign out",
+    "back": "Back",
+    "cancel": "Cancel",
+    "loading": "Loading…",
+    "error": "Error",
+    "optional": "(optional)"
+  },
+  "dashboard": {
+    "greetingPrefix": "Welcome back,",
+    "nav": {
+      "newTree": "New Tree",
+      "searchPlaceholder": "Search projects…"
+    },
+    "projects": {
+      "title": "My Projects",
+      "subtitle_one": "{{count}} genealogy tree",
+      "subtitle_other": "{{count}} genealogy trees",
+      "empty": "Manage your genealogy trees",
+      "noMatch": "No projects match \"{{query}}\""
+    },
+    "table": {
+      "projectTitle": "Project Title",
+      "owner": "Owner",
+      "nodes": "Nodes",
+      "lastModified": "Last Modified",
+      "edges": "edges"
+    },
+    "actions": {
+      "download": "Download .ged",
+      "duplicate": "Duplicate",
+      "rename": "Rename",
+      "delete": "Delete",
+      "clearSearch": "Clear search"
+    },
+    "modal": {
+      "title": "New Genealogy Project",
+      "subtitle": "Create an empty tree. You can upload a GEDCOM file later.",
+      "nameLabel": "Project Name",
+      "namePlaceholder": "e.g. The Johnson Family",
+      "descLabel": "Description",
+      "descPlaceholder": "Brief description…",
+      "createTree": "Create Tree",
+      "creating": "Creating…"
+    },
+    "confirmation": {
+      "bannerTitle": "Awaiting Email Confirmation",
+      "bannerSubtitle": "Please confirm your email address {{email}} to get full access.",
+      "resend": "Resend Email",
+      "resending": "Sending…"
+    },
+    "deleteConfirm": "Delete \"{{name}}\"? This cannot be undone.",
+    "footer": "© 2026 Noxwork Technologies — Engineering Innovation Labs"
+  },
+  "visualizer": {
+    "sidebar": {
+      "subtitle": "Genealogy Visualizer",
+      "import": "Import",
+      "legend": "Legend",
+      "projectActive": "Project active"
+    },
+    "legend": {
+      "male": "Male",
+      "female": "Female",
+      "unknown": "Unknown",
+      "parentChild": "Parent → Child",
+      "spouse": "Spouse",
+      "multiRole": "Multi-role"
+    },
+    "canvas": {
+      "noTree": "No Tree Loaded",
+      "uploadHint": "Upload a GEDCOM file to visualize your family tree.",
+      "uploadDrag": "Drag and drop a",
+      "uploadDragSuffix": "file into the sidebar.",
+      "backToDashboard": "← Back to Dashboard",
+      "clearCanvas": "✕ Clear Canvas"
+    },
+    "uploader": {
+      "dropHint": "Drop .ged file or click to upload",
+      "format": "GEDCOM 5.5 / 5.5.1 format",
+      "parsing": "Parsing GEDCOM...",
+      "parsedResults": "Parsed Results",
+      "individuals": "Individuals",
+      "families": "Families",
+      "session": "Session"
+    }
+  },
+  "auth": {
+    "register": "Register",
+    "signIn": "Sign In",
+    "createAccount": "Create Account",
+    "signingIn": "Signing in…",
+    "creatingAccount": "Creating account…",
+    "emailAddress": "Email address",
+    "password": "Password",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "forgotPassword": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "continueWithGoogle": "Continue with Google",
+    "resendConfirmation": "Didn't receive confirmation email? Resend it",
+    "resending": "Sending…"
+  }
+}

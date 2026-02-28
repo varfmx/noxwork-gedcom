@@ -23,6 +23,7 @@ model User {
   email     String   @unique
   firstName String?
   lastName  String?
+  language  String   @default("en") // UI language preference: "en" | "es"
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

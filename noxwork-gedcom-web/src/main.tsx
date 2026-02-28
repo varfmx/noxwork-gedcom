@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { ToastProvider } from './components/Toast'
 import './index.css'
+import './lib/i18n' // initialise i18next before rendering
 import App from './App.tsx'
 
 createRoot(document.getElementById('root')!).render(

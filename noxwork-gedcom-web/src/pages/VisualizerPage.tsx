@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { TreeCanvas } from '../features/visualizer/TreeCanvas';
 import { FileUploader } from '../features/uploader/FileUploader';
 import { useTreeStore } from '../store/useTreeStore';
@@ -11,6 +12,7 @@ import { useProjectStore } from '../store/useProjectStore';
  */
 export default function VisualizerPage() {
     const navigate = useNavigate();
+    const { t } = useTranslation();
     const sessionId = useTreeStore((s) => s.sessionId);
     const reset = useTreeStore((s) => s.reset);
     const activeProjectId = useProjectStore((s) => s.activeProjectId);
@@ -39,7 +41,7 @@ export default function VisualizerPage() {
                                     Noxwork GEDCOM
                                 </h1>
                                 <p className="text-[10px] text-nox-text-muted">
-                                    Genealogy Visualizer
+                                    {t('visualizer.sidebar.subtitle')}
                                 </p>
                             </div>
                         </div>
@@ -47,7 +49,7 @@ export default function VisualizerPage() {
                         {/* Back to dashboard */}
                         <button
                             onClick={handleBackToDashboard}
-                            title="Back to Dashboard"
+                            title={t('visualizer.canvas.backToDashboard')}
                             className="
                                 p-1.5 rounded-lg text-nox-text-muted
                                 hover:text-nox-cobalt-light hover:bg-nox-surface-lighter
@@ -64,7 +66,7 @@ export default function VisualizerPage() {
                     {activeProjectId && (
                         <div className="mt-2 px-2 py-1 rounded-md bg-nox-cobalt/10 border border-nox-cobalt/20">
                             <p className="text-[10px] text-nox-cobalt-light font-medium truncate">
-                                {activeProject?.name ?? 'Project active'}
+                                {activeProject?.name ?? t('visualizer.sidebar.projectActive')}
                             </p>
                         </div>
                     )}
@@ -74,7 +76,7 @@ export default function VisualizerPage() {
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                     <div>
                         <h2 className="text-xs font-semibold text-nox-text-muted uppercase tracking-wider mb-3">
-                            Import
+                            {t('visualizer.sidebar.import')}
                         </h2>
                         <FileUploader />
                     </div>
@@ -82,34 +84,34 @@ export default function VisualizerPage() {
                     {/* Legend */}
                     <div className="mt-6">
                         <h2 className="text-xs font-semibold text-nox-text-muted uppercase tracking-wider mb-3">
-                            Legend
+                            {t('visualizer.sidebar.legend')}
                         </h2>
                         <div className="space-y-2 text-xs text-nox-text-muted">
                             <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 rounded-sm bg-nox-male" />
-                                <span>Male</span>
+                                <span>{t('visualizer.legend.male')}</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 rounded-sm bg-nox-female" />
-                                <span>Female</span>
+                                <span>{t('visualizer.legend.female')}</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 rounded-sm bg-nox-unknown" />
-                                <span>Unknown</span>
+                                <span>{t('visualizer.legend.unknown')}</span>
                             </div>
                             <div className="flex items-center gap-2 mt-2 pt-2 border-t border-nox-surface-lighter">
                                 <div className="w-8 h-0.5 bg-nox-cobalt" />
-                                <span>Parent → Child</span>
+                                <span>{t('visualizer.legend.parentChild')}</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="w-8 h-0.5 border-t-2 border-dashed border-nox-orange" />
-                                <span>Spouse</span>
+                                <span>{t('visualizer.legend.spouse')}</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="inline-flex items-center bg-nox-warning text-nox-surface text-[8px] font-bold px-1 rounded-full">
                                     ⚠ 2
                                 </span>
-                                <span>Multi-role</span>
+                                <span>{t('visualizer.legend.multiRole')}</span>
                             </div>
                         </div>
                     </div>
@@ -129,7 +131,7 @@ export default function VisualizerPage() {
                                 transition-colors duration-200
                             "
                         >
-                            ✕ Clear Canvas
+                            {t('visualizer.canvas.clearCanvas')}
                         </button>
                     </div>
                 )}
@@ -146,14 +148,14 @@ export default function VisualizerPage() {
                                 <span className="text-3xl opacity-50">🌳</span>
                             </div>
                             <h2 className="text-xl font-semibold text-nox-text">
-                                No Tree Loaded
+                                {t('visualizer.canvas.noTree')}
                             </h2>
                             <p className="text-sm text-nox-text-muted leading-relaxed">
-                                Upload a GEDCOM file to visualize your family tree.
+                                {t('visualizer.canvas.uploadHint')}
                                 <br />
-                                Drag and drop a{' '}
-                                <span className="text-nox-orange font-medium">.ged</span> file
-                                into the sidebar.
+                                {t('visualizer.canvas.uploadDrag')}{' '}
+                                <span className="text-nox-orange font-medium">.ged</span>
+                                {' '}{t('visualizer.canvas.uploadDragSuffix')}
                             </p>
                             <button
                                 onClick={() => navigate('/dashboard')}
@@ -163,7 +165,7 @@ export default function VisualizerPage() {
                                     hover:bg-nox-cobalt/20 transition-colors duration-200
                                 "
                             >
-                                ← Back to Dashboard
+                                {t('visualizer.canvas.backToDashboard')}
                             </button>
                         </div>
                     </div>
