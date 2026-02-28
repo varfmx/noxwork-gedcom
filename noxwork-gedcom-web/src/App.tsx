@@ -4,6 +4,8 @@ import { useAuthStore } from './store/useAuthStore';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import AuthCallback from './pages/AuthCallback';
+import ForgotPassword from './pages/ForgotPassword';
+import UpdatePassword from './pages/UpdatePassword';
 import Dashboard from './pages/Dashboard';
 import VisualizerPage from './pages/VisualizerPage';
 
@@ -12,8 +14,10 @@ import VisualizerPage from './pages/VisualizerPage';
  *
  * Route map:
  *   /                   → redirect to /dashboard (ProtectedRoute handles unauthenticated → /login)
- *   /login              → LoginPage (Google SSO)
- *   /auth/callback      → AuthCallback (Supabase OAuth exchange)
+ *   /login              → LoginPage (Google SSO + Email/Password)
+ *   /auth/callback      → AuthCallback (Supabase OAuth/email exchange)
+ *   /forgot-password    → ForgotPassword (send reset email)
+ *   /update-password    → UpdatePassword (set new password after reset)
  *   /dashboard          → Dashboard (protected, project list)
  *   /visualizer         → VisualizerPage (protected, GEDCOM canvas — upload mode)
  *   /visualizer/:id     → VisualizerPage (protected, specific project canvas)
@@ -31,6 +35,8 @@ export default function App() {
             {/* Public routes */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/update-password" element={<UpdatePassword />} />
 
             {/* Protected routes */}
             <Route element={<ProtectedRoute />}>

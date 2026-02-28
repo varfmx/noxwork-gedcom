@@ -4,6 +4,10 @@ import { supabase } from '../lib/supabase';
 
 /* ─── State shape ────────────────────────────────────────────── */
 
+interface AuthResult {
+    error?: string;
+}
+
 interface AuthState {
     user: User | null;
     session: Session | null;
@@ -11,6 +15,11 @@ interface AuthState {
 
     // Actions
     signInWithGoogle: () => Promise<void>;
+    signInWithEmail: (email: string, password: string) => Promise<AuthResult>;
+    signUpWithEmail: (email: string, password: string) => Promise<AuthResult>;
+    resetPasswordForEmail: (email: string) => Promise<AuthResult>;
+    updatePassword: (password: string) => Promise<AuthResult>;
+    resendConfirmation: (email: string) => Promise<AuthResult>;
     signOut: () => Promise<void>;
     setSession: (session: Session | null) => void;
     initialize: () => Promise<void>;
@@ -41,6 +50,69 @@ export const useAuthStore = create<AuthState>((set) => ({
                 },
             },
         });
+    },
+
+    /**
+     * Sign in with email and password.
+     */
+    signInWithEmail: async (email, password) => {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) return { error: error.message };
+        return {};
+    },
+
+    /**
+     * Register a new user with email and password.
+     * Supabase sends a confirmation email — unconfirmed users have
+     * `user.email_confirmed_at === null`.
+     */
+    signUpWithEmail: async (email, password) => {
+        const { error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                emailRedirectTo: `${window.location.origin}/auth/callback`,
+            },
+        });
+        if (error) return { error: error.message };
+        return {};
+    },
+
+    /**
+     * Sends a password reset email. The link in the email redirects to
+     * `${window.location.origin}/update-password` where the user can
+     * set a new password.
+     */
+    resetPasswordForEmail: async (email) => {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/update-password`,
+        });
+        if (error) return { error: error.message };
+        return {};
+    },
+
+    /**
+     * Updates the authenticated user's password.
+     * Must be called after the user has been authenticated via the
+     * password-reset link (PASSWORD_RECOVERY event).
+     */
+    updatePassword: async (password) => {
+        const { error } = await supabase.auth.updateUser({ password });
+        if (error) return { error: error.message };
+        return {};
+    },
+
+    /**
+     * Resends the signup confirmation email for users who didn't receive it.
+     */
+    resendConfirmation: async (email) => {
+        const { error } = await supabase.auth.resend({
+            type: 'signup',
+            email,
+            options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+        });
+        if (error) return { error: error.message };
+        return {};
     },
 
     /**

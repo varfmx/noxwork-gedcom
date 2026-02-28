@@ -1,7 +1,7 @@
 # noxwork-gedcom-web — Project Context
 
-> **Last updated:** 2026-03-01
-> **Status:** Phase 4 — Dashboard & Auth ✅
+> **Last updated:** 2026-02-27
+> **Status:** Phase 5 — Email Auth Flow ✅
 > **Runtime:** React 19 + Vite 7 + TypeScript 5.9 (strict mode)
 > **Target:** ES2022, bundler module resolution
 
@@ -12,7 +12,7 @@
 `noxwork-gedcom-web` is the **frontend** of the Noxwork GEDCOM Labs platform. It is part of a **monorepo** located at `noxwork-gedcom/` alongside the backend (`noxwork-gedcom-api`).
 
 The frontend is responsible for:
-- **Auth:** Google SSO via Supabase Auth; JWT passed as `Authorization: Bearer` to backend
+- **Auth:** Google SSO + Email/Password via Supabase Auth; JWT passed as `Authorization: Bearer` to backend; full password-recovery flow (forgot password, update password, resend confirmation)
 - **Dashboard:** Overleaf-style project management — create, rename, delete, and open family tree projects
 - Uploading GEDCOM files and sending them to the backend API
 - Visualizing parsed family trees as an interactive graph using React Flow
@@ -60,17 +60,20 @@ noxwork-gedcom-web/
 │   │   └── api.ts                                  # Backend API response types + ProjectSummary + PersonNodeData
 │   │
 │   ├── store/                                      # ══ State Management ══
-│   │   ├── useAuthStore.ts                         # Auth state (user, session, signInWithGoogle, signOut)
+│   │   ├── useAuthStore.ts                         # Auth state: Google SSO, email sign-in/up, reset, resend, updatePassword
 │   │   ├── useProjectStore.ts                      # Projects CRUD with optimistic updates
 │   │   └── useTreeStore.ts                         # Zustand store (upload, parse, layout, editor)
 │   │
 │   ├── components/                                 # ══ Shared Components ══
-│   │   └── ProtectedRoute.tsx                      # Auth guard: spinner → Outlet or Navigate /login
+│   │   ├── ProtectedRoute.tsx                      # Auth guard: spinner → Outlet or Navigate /login
+│   │   └── Toast.tsx                               # Toast notification system (context + provider + hook)
 │   │
 │   ├── pages/                                      # ══ Route Pages ══
-│   │   ├── LoginPage.tsx                           # Full-screen Google SSO login
-│   │   ├── AuthCallback.tsx                        # Supabase OAuth callback → navigate /dashboard
-│   │   ├── Dashboard.tsx                           # Project list + create modal + search
+│   │   ├── LoginPage.tsx                           # Email/Password + Google SSO login; Sign-up toggle; Resend confirmation
+│   │   ├── AuthCallback.tsx                        # Supabase OAuth/email callback → /dashboard or /update-password
+│   │   ├── ForgotPassword.tsx                      # Send password-reset email via Supabase
+│   │   ├── UpdatePassword.tsx                      # Set new password after recovery; live strength meter + validation
+│   │   ├── Dashboard.tsx                           # Project list + create modal + search; unconfirmed-user banner
 │   │   └── VisualizerPage.tsx                      # Tree editor (extracted from App.tsx) + back button
 │   │
 │   └── features/                                   # ══ Feature Modules ══
@@ -161,20 +164,52 @@ These generate Tailwind utility classes like `bg-nox-cobalt`, `text-nox-orange`,
 
 All routes are declared in `App.tsx` using `<Routes>`:
 
-| Path              | Component        | Guard          | Description                              |
-|-------------------|------------------|----------------|------------------------------------------|
-| `/login`          | `LoginPage`      | —              | Full-screen Google SSO                   |
-| `/auth/callback`  | `AuthCallback`   | —              | Supabase OAuth redirect handler           |
-| `/dashboard`      | `Dashboard`      | ProtectedRoute | Project list page                        |
-| `/visualizer`     | `VisualizerPage` | ProtectedRoute | Tree editor (no active project)          |
-| `/visualizer/:id` | `VisualizerPage` | ProtectedRoute | Tree editor for a specific project       |
-| `*`               | —                | —              | Redirects to `/dashboard`                |
+| Path                 | Component          | Guard          | Description                                          |
+|----------------------|--------------------|----------------|------------------------------------------------------|
+| `/login`             | `LoginPage`        | —              | Email/Password + Google SSO; Sign-up + Resend        |
+| `/auth/callback`     | `AuthCallback`     | —              | OAuth/email confirmation → /dashboard; recovery → /update-password |
+| `/forgot-password`   | `ForgotPassword`   | —              | Request password reset email                         |
+| `/update-password`   | `UpdatePassword`   | —              | Set new password (requires PASSWORD_RECOVERY session) |
+| `/dashboard`         | `Dashboard`        | ProtectedRoute | Project list; unconfirmed-user warning banner        |
+| `/visualizer`        | `VisualizerPage`   | ProtectedRoute | Tree editor (no active project)                      |
+| `/visualizer/:id`    | `VisualizerPage`   | ProtectedRoute | Tree editor for a specific project                   |
+| `*`                  | —                  | —              | Redirects to `/dashboard`                            |
 
 ### Auth Flow
 
+**Google SSO:**
 ```
 Browser → /login → signInWithGoogle() → Supabase Google OAuth → /auth/callback
-  AuthCallback: supabase.auth.getSession() → setSession() → navigate('/dashboard')
+  AuthCallback: onAuthStateChange(SIGNED_IN) → setSession() → navigate('/dashboard')
+```
+
+**Email/Password sign-in:**
+```
+/login → signInWithEmail(email, password) → Supabase → session set via onAuthStateChange
+```
+
+**Email registration:**
+```
+/login (Register tab) → signUpWithEmail(email, password) → Supabase sends confirmation email
+  → user clicks link → /auth/callback → navigate('/dashboard')
+  → Dashboard shows "Awaiting Confirmation" banner if email_confirmed_at === null
+```
+
+**Password recovery:**
+```
+/forgot-password → resetPasswordForEmail(email) → Supabase sends reset email
+  → user clicks link → /update-password (hash fragment)
+  → UpdatePassword: onAuthStateChange(PASSWORD_RECOVERY) → setSessionReady
+  → updateUser({ password }) → navigate('/dashboard')
+```
+
+**Resend confirmation:**
+```
+/login or /dashboard banner → resendConfirmation(email) → supabase.auth.resend()
+```
+
+**Session initialization:**
+```
   App.tsx useEffect: initialize() → onAuthStateChange subscription
   ProtectedRoute: isLoading? spinner : user? <Outlet> : <Navigate to="/login">
 ```
@@ -320,7 +355,19 @@ Key flags: `strict: true`, `noUnusedLocals`, `noUnusedParameters`, `erasableSynt
 - [x] `useProjectStore`: CRUD operations with optimistic updates, JWT auth headers
 - [x] `VisualizerPage` extracted from App.tsx with back-to-dashboard nav
 
-### 🔲 Phase 5 — Interactivity
+### ✅ Phase 5 — Email Auth Flow
+- [x] Email/Password sign-in and sign-up via `supabase.auth.signInWithPassword` / `signUp`
+- [x] `ForgotPassword` page: sends reset email via `resetPasswordForEmail`
+- [x] `UpdatePassword` page: PASSWORD_RECOVERY session detection, live strength meter, show/hide toggle, requirements checklist
+- [x] Password validation: min 8 chars, uppercase, lowercase, number, special character
+- [x] `AuthCallback` updated: handles `PASSWORD_RECOVERY` → `/update-password`, `SIGNED_IN` → `/dashboard`
+- [x] `LoginPage` refactored: Sign In / Register tabs, Google SSO, Forgot Password link
+- [x] "Resend confirmation email" button in LoginPage and Dashboard banner
+- [x] Dashboard "Awaiting Confirmation" banner for users with `email_confirmed_at === null`
+- [x] `Toast` system: Noxwork-branded toast notifications with success/error/info/warning variants
+- [x] `ToastProvider` wraps the app in `main.tsx`
+
+### 🔲 Phase 6 — Interactivity
 - [ ] Click node → detail panel / modal
 - [ ] Search / filter individuals
 - [ ] Highlight kinship paths on hover
@@ -353,6 +400,10 @@ Key flags: `strict: true`, `noUnusedLocals`, `noUnusedParameters`, `erasableSynt
 10. **PersonNodeData needs `[key: string]: unknown`** — React Flow v12 requires node data to satisfy `Record<string, unknown>`
 11. **`useAuthStore.initialize()`** must be called once in `App.tsx` via `useEffect` to rehydrate the Supabase session on page load and subscribe to `onAuthStateChange`
 12. **Supabase env vars** — `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are required; `src/lib/supabase.ts` throws at import time if either is missing
-13. **Auth redirect URI** — Supabase Google OAuth `redirectTo` points to `/auth/callback`; register `{origin}/auth/callback` in the Supabase dashboard and Google Cloud Console
+13. **Auth redirect URIs** — Register both `{origin}/auth/callback` AND `{origin}/update-password` in Supabase Dashboard → Authentication → URL Configuration → Redirect URLs
 14. **API auth headers** — `useProjectStore` calls `getAccessToken()` from `src/lib/supabase.ts` and adds `Authorization: Bearer {token}` to every request; expired sessions silently return `null` and requests return 401
 15. **`OnNodesChange` generic default** — Avoid using `OnNodesChange` (defaults to `OnNodesChange<Node>`) for node-type-specific stores; use the explicit `(changes: NodeChange<Node<PersonNodeData>>[]) => void` signature instead
+16. **Toast system** — `useToast()` hook from `src/components/Toast.tsx`; `ToastProvider` must wrap the app (done in `main.tsx`); toasts auto-dismiss after 4 seconds; success toasts use `nox-orange`
+17. **Password recovery flow** — The `UpdatePassword` page listens for `onAuthStateChange(PASSWORD_RECOVERY)` which fires when Supabase exchanges the recovery hash fragment; the form is locked until this event fires
+18. **Unconfirmed users** — Check `user.email_confirmed_at === null` (not falsy, as Google SSO users auto-confirm); unconfirmed users are allowed to reach the dashboard but see a warning banner with a resend button
+19. **`supabase.auth.resend()`** — Used for signup confirmation resend; pass `{ type: 'signup', email }` matching the Supabase SDK v2 API

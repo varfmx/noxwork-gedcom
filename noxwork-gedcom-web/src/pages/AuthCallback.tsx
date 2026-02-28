@@ -4,23 +4,42 @@ import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
 
 /**
- * AuthCallback — Handles the OAuth redirect from Supabase / Google.
+ * AuthCallback — Handles redirects from Supabase Auth:
  *
- * Supabase appends a `#access_token=...&refresh_token=...` fragment to the
- * redirect URL. The Supabase client automatically picks this up when the page
- * loads and calls `onAuthStateChange`, which useAuthStore already subscribes
- * to. We just need to wait for the session to be confirmed, then navigate.
+ *  1. OAuth (Google SSO): Exchanges hash tokens → navigate /dashboard
+ *  2. Email confirmation: User clicks link in signup email → /dashboard
+ *  3. Password recovery: User clicks reset-password email → /update-password
+ *
+ * Supabase appends a URL fragment with `#access_token=...&type=recovery|signup`
+ * which the SDK parses automatically via onAuthStateChange.
  */
 export default function AuthCallback() {
     const navigate = useNavigate();
     const setSession = useAuthStore((s) => s.setSession);
 
     useEffect(() => {
-        // Supabase exchanges the hash fragment tokens and resolves the session
-        supabase.auth.getSession().then(({ data }) => {
-            setSession(data.session);
-            navigate('/dashboard', { replace: true });
+        // Listen for the auth event triggered by the hash fragment
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'PASSWORD_RECOVERY') {
+                // Password reset link — send user to update-password form
+                setSession(session);
+                navigate('/update-password', { replace: true });
+            } else if (session) {
+                // SIGNED_IN (OAuth or email confirmation)
+                setSession(session);
+                navigate('/dashboard', { replace: true });
+            }
         });
+
+        // Fallback: if the auth state already resolved before we subscribed
+        supabase.auth.getSession().then(({ data }) => {
+            if (data.session) {
+                setSession(data.session);
+                navigate('/dashboard', { replace: true });
+            }
+        });
+
+        return () => subscription.unsubscribe();
     }, [navigate, setSession]);
 
     return (
@@ -33,3 +52,4 @@ export default function AuthCallback() {
         </div>
     );
 }
+

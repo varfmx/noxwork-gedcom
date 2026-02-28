@@ -142,6 +142,9 @@ The frontend dashboard for visualizing GEDCOM family trees as interactive graphs
 - **Dagre Layout** — Automatic hierarchical positioning (top-to-bottom) with spouse alignment.
 - **Drag & Drop Upload** — Upload `.ged` files directly in the browser.
 - **Dark Theme** — Noxwork-branded cobalt/orange palette with Tailwind CSS v4.
+- **Email Auth Flow** — Sign-up, sign-in, forgot password, update password, and resend confirmation email via Supabase Auth.
+- **Google SSO** — One-click Google OAuth login with session management.
+- **Dashboard** — Overleaf-style project management with unconfirmed-user banner.
 
 ### Install & Run
 
@@ -185,6 +188,10 @@ The frontend will be available at `http://localhost:5173` and proxies API calls 
 - [x] Layout engine (Dagre) for automatic node positioning with spouse alignment
 - [x] Backend deployment (Railway)
 - [x] Frontend deployment (Vercel)
+- [x] Supabase Auth: Google SSO + Email/Password login + registration
+- [x] Password recovery flow (forgot password, update password)
+- [x] Resend confirmation email + unconfirmed-user dashboard banner
+- [x] Toast notification system (success/error/info/warning)
 - [ ] PostgreSQL persistence with Prisma ORM (Neon.tech)
 - [ ] PDF/PNG export of family trees
 - [ ] Editor mode — create trees from scratch in the browser

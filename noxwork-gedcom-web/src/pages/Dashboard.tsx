@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { useProjectStore } from '../store/useProjectStore';
+import { useToast } from '../components/Toast';
 import { ProjectTable } from '../features/dashboard/ProjectTable';
 import { EmptyState } from '../features/dashboard/EmptyState';
 
@@ -119,10 +120,26 @@ function CreateProjectModal({ onClose }: CreateModalProps) {
 
 export default function Dashboard() {
     const navigate = useNavigate();
-    const { user, signOut } = useAuthStore();
+    const { user, signOut, resendConfirmation } = useAuthStore();
     const { projects, isLoading, error, fetchProjects, clearError } = useProjectStore();
+    const { addToast } = useToast();
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [isResending, setIsResending] = useState(false);
+
+    const isUnconfirmed = user !== null && !user.email_confirmed_at;
+
+    const handleResendConfirmation = async () => {
+        if (!user?.email) return;
+        setIsResending(true);
+        const result = await resendConfirmation(user.email);
+        if (result.error) {
+            addToast(result.error, 'error');
+        } else {
+            addToast('Confirmation email resent! Check your inbox.', 'success');
+        }
+        setIsResending(false);
+    };
 
     // Load projects on mount
     useEffect(() => {
@@ -251,6 +268,35 @@ export default function Dashboard() {
                         </button>
                     )}
                 </div>
+
+                {/* ── Awaiting email confirmation banner ── */}
+                {isUnconfirmed && (
+                    <div className="mb-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-xl border border-nox-warning/40 bg-nox-warning/10 px-4 py-3">
+                        <div className="flex items-start gap-3">
+                            <svg className="w-5 h-5 text-nox-warning flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+                            </svg>
+                            <div>
+                                <p className="text-sm font-semibold text-nox-warning">Awaiting Email Confirmation</p>
+                                <p className="text-xs text-nox-text-muted mt-0.5">
+                                    Please confirm your email address{user?.email ? ` (${user.email})` : ''} to get full access.
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={handleResendConfirmation}
+                            disabled={isResending}
+                            className="
+                                flex-shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg
+                                border border-nox-warning/50 text-nox-warning
+                                hover:bg-nox-warning/20 transition-colors
+                                disabled:opacity-50 disabled:cursor-not-allowed
+                            "
+                        >
+                            {isResending ? 'Sending…' : 'Resend Email'}
+                        </button>
+                    </div>
+                )}
 
                 {/* Error banner */}
                 {error && (

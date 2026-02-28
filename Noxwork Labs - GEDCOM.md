@@ -90,6 +90,7 @@ El Desafío del "Hijo-Tío-Primo"
 - [x] Paso 2: Crear la lógica de "Relaciones" en el Backend que identifique padres, hijos y parejas.
 - [x] Paso 3: En el Frontend, mapear ese JSON a los objetos nodes y edges que requiere React Flow.
 - [x] Paso 4: Aplicar el branding de Noxwork a la interfaz.
+- [x] Paso 5: Autenticación completa (Google SSO + Email/Password + recuperación de contraseña + reenvío de confirmación + banner de usuario no confirmado).
 
 ## Estrategia de Despliegue (Infraestructura Low-Cost)
 - **Frontend Hosting:** Vercel (CI/CD desde GitHub).
