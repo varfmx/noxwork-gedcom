@@ -36,7 +36,7 @@ void i18n
         detection: {
             order: ['localStorage', 'navigator'],
             lookupLocalStorage: 'noxwork_lang',
-            cacheUserLanguage: true,
+            caches: ['localStorage'],
         },
 
         interpolation: {
