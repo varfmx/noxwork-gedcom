@@ -192,7 +192,7 @@ The frontend will be available at `http://localhost:5173` and proxies API calls 
 - [x] Password recovery flow (forgot password, update password)
 - [x] Resend confirmation email + unconfirmed-user dashboard banner
 - [x] Toast notification system (success/error/info/warning)
-- [ ] PostgreSQL persistence with Prisma ORM (Neon.tech)
+- [x] PostgreSQL persistence with Prisma ORM (Neon.tech)
 - [ ] PDF/PNG export of family trees
 - [ ] Editor mode — create trees from scratch in the browser
 - [ ] Custom domain (`gedcom.noxwork.net`)
@@ -204,8 +204,8 @@ The frontend will be available at `http://localhost:5173` and proxies API calls 
 | Service | Platform | URL |
 |---------|----------|-----|
 | **API** | Railway | [`noxwork-gedcom-production.up.railway.app`](https://noxwork-gedcom-production.up.railway.app/api) |
-| **Frontend** | Vercel | *Pending deployment* |
-| **Database** | Neon.tech | *Planned* |
+| **Frontend** | Vercel | [`noxwork-gedcom.vercel.app`](https://noxwork-gedcom.vercel.app) |
+| **Database** | Neon.tech | *Active (PostgreSQL via Prisma)* |
 
 ### Infrastructure Notes
 
@@ -221,7 +221,7 @@ The frontend will be available at `http://localhost:5173` and proxies API calls 
 |-------|-----------|
 | **Backend** | NestJS 11 · TypeScript 5.7 · Node.js |
 | **Frontend** | React 19 · Vite 7 · React Flow v12 · Tailwind CSS v4 · Zustand 5 · Dagre |
-| **Database** *(planned)* | PostgreSQL 16+ · Prisma ORM |
+| **Database** | PostgreSQL 16+ · Prisma ORM · Neon.tech |
 | **Hosting** | Railway (backend) · Vercel (frontend) · Neon (DB, planned) |
 
 ---
