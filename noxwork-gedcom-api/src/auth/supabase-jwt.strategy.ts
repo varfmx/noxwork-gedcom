@@ -3,6 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { passportJwtSecret } from 'jwks-rsa';
 import type { JwtPayload, AuthenticatedUser } from './interfaces';
+import { UserSyncService } from './user-sync.service';
 
 /**
  * SupabaseJwtStrategy — validates Bearer tokens issued by Supabase Auth.
@@ -23,7 +24,7 @@ export class SupabaseJwtStrategy extends PassportStrategy(
     Strategy,
     'supabase-jwt',
 ) {
-    constructor() {
+    constructor(private readonly userSync: UserSyncService) {
         const supabaseUrl = process.env.SUPABASE_URL;
         if (!supabaseUrl) {
             throw new Error(
@@ -47,14 +48,22 @@ export class SupabaseJwtStrategy extends PassportStrategy(
     /**
      * Called by Passport after signature + expiry are verified.
      * Must return the value that will be attached to `request.user`.
+     *
+     * We fire-and-forget the user sync here so the Prisma User row is always
+     * kept current after every valid JWT is received, without adding latency
+     * to the request (errors are swallowed inside syncUser).
      */
-    validate(payload: JwtPayload): AuthenticatedUser {
+    async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
         if (payload.role !== 'authenticated') {
             throw new UnauthorizedException(
                 'Token role must be "authenticated". ' +
                 'Anon and service-role tokens are not accepted.',
             );
         }
+
+        // Sync user metadata to the Prisma User table on every valid request.
+        // syncUser catches its own errors, so this never throws.
+        await this.userSync.syncUser(payload);
 
         return {
             id: payload.sub,
