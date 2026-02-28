@@ -1,7 +1,7 @@
 # noxwork-gedcom-api — Project Context
 
-> **Last updated:** 2026-02-27
-> **Status:** Phase 5 — Email Auth Guard Hardening ✅
+> **Last updated:** 2026-02-28
+> **Status:** Phase 6 — Persistence Layer (Upload + Hydration) ✅
 > **Runtime:** NestJS 11 + TypeScript 5.7 (strict mode)
 > **Node target:** ES2023
 
@@ -58,14 +58,16 @@ noxwork-gedcom-api/
 │   │       ├── jwt-payload.interface.ts         # JwtPayload (Supabase JWT claims)
 │   │       └── authenticated-user.interface.ts  # AuthenticatedUser { id, email }
 │   │
-│   ├── project/                                 # ══ Project (Tree CRUD) Module ══
+│   ├── project/                                 # ══ Project (Tree CRUD + Persistence) Module ══
 │   │   ├── project.module.ts                    # Imports AuthModule, provides ProjectService
-│   │   ├── project.controller.ts                # REST: GET/POST/PATCH/DELETE /api/projects
-│   │   ├── project.service.ts                   # Business logic + ownership enforcement
+│   │   ├── project.controller.ts                # REST: GET/POST/PATCH/DELETE /api/projects + upload + detail
+│   │   ├── project.service.ts                   # Business logic + ownership enforcement + GEDCOM persistence
+│   │   ├── gedcom-exporter.service.ts           # GEDCOM 5.5.1 export from DB records
 │   │   └── dto/
 │   │       ├── index.ts                         # Barrel export
 │   │       ├── create-project.dto.ts            # CreateProjectDto (name, description?)
-│   │       └── rename-project.dto.ts            # RenameProjectDto (name)
+│   │       ├── rename-project.dto.ts            # RenameProjectDto (name)
+│   │       └── upload-to-project.dto.ts         # UploadToProjectDto (fileContent, fileName?)
 │   │
 │   └── gedcom/                                  # ══ GEDCOM Domain Module ══
 │       ├── gedcom.module.ts                     # NestJS module with DI wiring
@@ -181,12 +183,15 @@ All routes are prefixed with `/api` (set in `main.ts`).
 
 ### Protected (requires `Authorization: Bearer <supabase-jwt>`)
 
-| Method   | Route                  | Body / Params               | Response                                                              |
-|----------|------------------------|-----------------------------|-----------------------------------------------------------------------|
-| `GET`    | `/api/projects`        | —                           | `{ success, data: ProjectSummary[] }`                                 |
-| `POST`   | `/api/projects`        | `{ name, description? }`   | `{ success, message, data: ProjectSummary }`                          |
-| `PATCH`  | `/api/projects/:id`    | `{ name }`                  | `{ success, message, data: ProjectSummary }`                          |
-| `DELETE` | `/api/projects/:id`    | —                           | `204 No Content`                                                      |
+| Method   | Route                        | Body / Params                                | Response                                                              |
+|----------|------------------------------|----------------------------------------------|-----------------------------------------------------------------------|
+| `GET`    | `/api/projects`              | —                                            | `{ success, data: ProjectSummary[] }`                                 |
+| `POST`   | `/api/projects`              | `{ name, description? }`                    | `{ success, message, data: ProjectSummary }`                          |
+| `GET`    | `/api/projects/:id`          | —                                            | `{ success, data: ProjectDetail }`                                    |
+| `POST`   | `/api/projects/:id/upload`   | `{ fileContent: string, fileName?: string }` | `{ success, message, data: ProjectDetail }`                           |
+| `GET`    | `/api/projects/:id/export`   | —                                            | GEDCOM 5.5.1 file download                                           |
+| `PATCH`  | `/api/projects/:id`          | `{ name }`                                   | `{ success, message, data: ProjectSummary }`                          |
+| `DELETE` | `/api/projects/:id`          | —                                            | `204 No Content`                                                      |
 
 #### ProjectSummary shape
 
@@ -201,6 +206,21 @@ All routes are prefixed with `/api` (set in `main.ts`).
   updatedAt:   Date;
 }
 ```
+
+#### ProjectDetail shape (extends ProjectSummary)
+
+```ts
+{
+  ...ProjectSummary,
+  individuals: GedcomIndividual[];  // Reconstructed from Person rows
+  families:    GedcomFamily[];      // Reconstructed from Relationship rows (SPOUSE + PARENT → FAM)
+}
+```
+
+The `GET /projects/:id` and `POST /projects/:id/upload` endpoints return `ProjectDetail`,
+which includes the same `individuals[]` and `families[]` shapes that the frontend receives
+from `POST /gedcom/upload`. This allows the frontend to reuse its existing mapping logic
+(`mapIndividualsToNodes`, `mapFamiliesToEdges`) for both upload and hydration.
 
 ### Security model
 - All `/api/projects` routes are guarded by `JwtAuthGuard` (Supabase ES256/RS256 JWT validation via JWKS).
@@ -387,11 +407,21 @@ The `GedcomEngine` currently supports GEDCOM 5.5/5.5.1 tags:
 - [x] `JwtPayload` interface updated with `aal` and `amr` claims for post-reset session introspection
 - [x] Security documentation: post-password-reset JWT validation flow documented in guard comments
 
-### 🔲 Phase 6 — Export Engine
-- [ ] Generate valid GEDCOM 7.0 standard files from database
+### ✅ Phase 6 — Persistence Layer (Upload + Hydration)
+- [x] `POST /api/projects/:id/upload` — Parses GEDCOM and persists all individuals + families into PostgreSQL via Prisma transaction
+- [x] `GET /api/projects/:id` — Retrieves project with reconstructed `GedcomIndividual[]` and `GedcomFamily[]` from Person + Relationship rows
+- [x] `UploadToProjectDto` — Validates `fileContent` and optional `fileName`
+- [x] `ProjectService.uploadToProject()` — Delete-then-insert strategy inside `$transaction` for clean re-uploads
+- [x] `ProjectService.findOneForUser()` — Reconstructs FAM records from SPOUSE + PARENT relationships
+- [x] `ProjectDetail` response shape — Extends `ProjectSummary` with `individuals[]` and `families[]`
+- [x] Upsert-safe: re-uploading a GEDCOM replaces all existing data for the project
+- [x] Person metadata JSON stores `birthDate`, `birthPlace`, `deathDate`, `deathPlace`, `familySpouseIds`, `familyChildId`
+
+### 🔲 Phase 7 — Export Engine
+- [x] `GedcomExporterService` — Generates valid GEDCOM 5.5.1 files from DB records
 - [ ] PDF/PNG export of visualized trees
 
-### 🔲 Phase 6 — Deployment
+### 🔲 Phase 8 — Deployment
 - [ ] Backend: Railway.app (Node.js runtime)
 - [ ] Database: Neon.tech (PostgreSQL Serverless)
 - [ ] Frontend: Vercel
@@ -425,3 +455,6 @@ The `GedcomEngine` currently supports GEDCOM 5.5/5.5.1 tags:
 12. **`ensureUser()` is called on every `POST /projects`** — idempotent upsert handles first-time SSO logins without extra roundtrips
 13. **Ownership leak prevention** — `delete/rename` fetches by `{ id }` then checks `userId`; returns **404** (not 403) when record doesn't belong to caller
 14. **Email auth + password reset** — Supabase issues a fresh JWT after password reset; the JWKS-based verification (exp + signature) automatically rejects old tokens; no additional guard logic is needed for post-reset invalidation
+15. **Upload persistence strategy** — `uploadToProject()` uses a delete-then-insert transaction (not upserts) because GEDCOM re-uploads replace the entire dataset; this avoids orphan detection complexity
+16. **Family reconstruction** — `reconstructFamilies()` rebuilds `GedcomFamily[]` from flat SPOUSE + PARENT rows; deduplicates spouse pairs via sorted DB-id keys; distributes children into their parents' existing FAM or creates implicit single/two-parent families
+17. **Person metadata column** — Raw GEDCOM date strings, places, and family cross-references (`familySpouseIds`, `familyChildId`) are stored in the `metadata` JSON column rather than as separate DB columns, avoiding schema migration for every new GEDCOM tag

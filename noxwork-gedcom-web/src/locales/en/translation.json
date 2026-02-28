@@ -70,6 +70,7 @@
     },
     "canvas": {
       "noTree": "No Tree Loaded",
+      "loadingProject": "Loading family tree…",
       "uploadHint": "Upload a GEDCOM file to visualize your family tree.",
       "uploadDrag": "Drag and drop a",
       "uploadDragSuffix": "file into the sidebar.",

@@ -96,3 +96,44 @@ export interface PersonNodeData {
     detectedRoles: ApiDetectedRole[];
     gedcomId: string;
 }
+
+/* ─── Project Detail (hydration) ─────────────────────────────── */
+
+/**
+ * Response shape returned by GET /api/projects/:id.
+ * Contains the full project metadata plus reconstructed
+ * individuals and families in the same shape as an upload response.
+ */
+export interface ProjectDetailResponse {
+    success: boolean;
+    data: {
+        id: string;
+        name: string;
+        description: string | null;
+        nodeCount: number;
+        edgeCount: number;
+        createdAt: string;
+        updatedAt: string;
+        individuals: ApiIndividual[];
+        families: ApiFamily[];
+    };
+}
+
+/**
+ * Response shape returned by POST /api/projects/:id/upload.
+ */
+export interface ProjectUploadResponse {
+    success: boolean;
+    message: string;
+    data: {
+        id: string;
+        name: string;
+        description: string | null;
+        nodeCount: number;
+        edgeCount: number;
+        createdAt: string;
+        updatedAt: string;
+        individuals: ApiIndividual[];
+        families: ApiFamily[];
+    };
+}

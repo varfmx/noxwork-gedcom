@@ -1,4 +1,5 @@
-import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { TreeCanvas } from '../features/visualizer/TreeCanvas';
 import { FileUploader } from '../features/uploader/FileUploader';
@@ -8,15 +9,29 @@ import { useProjectStore } from '../store/useProjectStore';
 /**
  * VisualizerPage — The interactive family tree canvas.
  * Accessed at /visualizer or /visualizer/:projectId.
- * Extracted from the original App.tsx to enable dashboard routing.
+ *
+ * When a `projectId` param is present, the page automatically hydrates
+ * the React Flow canvas with persisted data from the backend.
  */
 export default function VisualizerPage() {
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const { id: routeProjectId } = useParams<{ id: string }>();
     const sessionId = useTreeStore((s) => s.sessionId);
+    const isHydrating = useTreeStore((s) => s.isHydrating);
     const reset = useTreeStore((s) => s.reset);
+    const loadProject = useTreeStore((s) => s.loadProject);
     const activeProjectId = useProjectStore((s) => s.activeProjectId);
     const activeProject = useProjectStore((s) => s.projects.find((p) => p.id === s.activeProjectId));
+    const setActiveProject = useProjectStore((s) => s.setActiveProject);
+
+    // Hydrate tree data when opening a project from the dashboard
+    useEffect(() => {
+        if (routeProjectId && routeProjectId !== sessionId) {
+            setActiveProject(routeProjectId);
+            loadProject(routeProjectId);
+        }
+    }, [routeProjectId, sessionId, setActiveProject, loadProject]);
 
     const handleBackToDashboard = () => {
         reset();
@@ -139,7 +154,17 @@ export default function VisualizerPage() {
 
             {/* ── Main Canvas ── */}
             <main className="flex-1 relative">
-                {sessionId ? (
+                {isHydrating ? (
+                    /* Noxwork Cobalt Blue loading spinner during project hydration */
+                    <div className="absolute inset-0 flex items-center justify-center bg-nox-surface">
+                        <div className="flex flex-col items-center gap-4">
+                            <div className="w-12 h-12 border-[3px] border-nox-cobalt/30 border-t-nox-cobalt rounded-full animate-spin" />
+                            <p className="text-sm text-nox-text-muted font-medium">
+                                {t('visualizer.canvas.loadingProject')}
+                            </p>
+                        </div>
+                    </div>
+                ) : sessionId ? (
                     <TreeCanvas />
                 ) : (
                     <div className="absolute inset-0 flex items-center justify-center">

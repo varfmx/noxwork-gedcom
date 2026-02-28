@@ -1,15 +1,18 @@
 import { useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTreeStore } from '../../store/useTreeStore';
+import { useProjectStore } from '../../store/useProjectStore';
 
 /* ─── FileUploader Component ─────────────────────────────────── */
 
 export function FileUploader() {
     const uploadAndParse = useTreeStore((s) => s.uploadAndParse);
+    const uploadToProject = useTreeStore((s) => s.uploadToProject);
     const isLoading = useTreeStore((s) => s.isLoading);
     const error = useTreeStore((s) => s.error);
     const stats = useTreeStore((s) => s.stats);
     const sessionId = useTreeStore((s) => s.sessionId);
+    const activeProjectId = useProjectStore((s) => s.activeProjectId);
     const { t } = useTranslation();
 
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -18,9 +21,14 @@ export function FileUploader() {
     const handleFile = useCallback(
         async (file: File) => {
             const text = await file.text();
-            await uploadAndParse(text, file.name);
+            // If we have an active project, persist into the database
+            if (activeProjectId) {
+                await uploadToProject(activeProjectId, text, file.name);
+            } else {
+                await uploadAndParse(text, file.name);
+            }
         },
-        [uploadAndParse],
+        [activeProjectId, uploadToProject, uploadAndParse],
     );
 
     const onDrop = useCallback(

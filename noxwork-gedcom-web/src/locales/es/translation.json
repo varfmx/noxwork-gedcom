@@ -70,6 +70,7 @@
     },
     "canvas": {
       "noTree": "Sin Árbol Cargado",
+      "loadingProject": "Cargando árbol genealógico…",
       "uploadHint": "Sube un archivo GEDCOM para visualizar tu árbol genealógico.",
       "uploadDrag": "Arrastra y suelta un archivo",
       "uploadDragSuffix": "al panel lateral.",

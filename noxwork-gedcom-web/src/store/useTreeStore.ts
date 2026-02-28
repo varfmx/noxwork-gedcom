@@ -15,7 +15,10 @@ import type {
     UploadResponse,
     ApiIndividual,
     ApiFamily,
+    ProjectDetailResponse,
+    ProjectUploadResponse,
 } from '../types/api';
+import { getAccessToken } from '../lib/supabase';
 
 /* ─── Constants ──────────────────────────────────────────────── */
 
@@ -99,12 +102,16 @@ interface TreeState {
     nodes: Node<PersonNodeData>[];
     edges: Edge[];
     isLoading: boolean;
+    isHydrating: boolean;
     error: string | null;
     sessionId: string | null;
+    activeProjectId: string | null;
     stats: { individualsCount: number; familiesCount: number } | null;
 
     // Actions
     uploadAndParse: (fileContent: string, fileName?: string) => Promise<void>;
+    uploadToProject: (projectId: string, fileContent: string, fileName?: string) => Promise<void>;
+    loadProject: (projectId: string) => Promise<void>;
     onNodesChange: (changes: NodeChange<Node<PersonNodeData>>[]) => void;
     onEdgesChange: OnEdgesChange;
     applyLayout: () => void;
@@ -342,12 +349,26 @@ function applyDagreLayout(
 
 /* ─── Zustand Store ──────────────────────────────────────────── */
 
+/* ─── Auth Headers Helper ────────────────────────────────────── */
+
+async function authHeaders(): Promise<HeadersInit> {
+    const token = await getAccessToken();
+    return {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+}
+
+/* ─── Zustand Store ──────────────────────────────────────────── */
+
 export const useTreeStore = create<TreeState>((set, get) => ({
     nodes: [],
     edges: [],
     isLoading: false,
+    isHydrating: false,
     error: null,
     sessionId: null,
+    activeProjectId: null,
     stats: null,
 
     uploadAndParse: async (fileContent: string, fileName?: string) => {
@@ -390,6 +411,121 @@ export const useTreeStore = create<TreeState>((set, get) => ({
         } catch (err) {
             set({
                 isLoading: false,
+                error: err instanceof Error ? err.message : 'Unknown error',
+            });
+        }
+    },
+
+    /**
+     * Uploads a GEDCOM file to a specific project, persisting it in the DB.
+     * After a successful upload the canvas is hydrated with the persisted data.
+     */
+    uploadToProject: async (projectId: string, fileContent: string, fileName?: string) => {
+        set({ isLoading: true, error: null });
+
+        try {
+            const response = await fetch(`${API_BASE}/projects/${projectId}/upload`, {
+                method: 'POST',
+                headers: await authHeaders(),
+                body: JSON.stringify({ fileContent, fileName }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.status}`);
+            }
+
+            const result = (await response.json()) as ProjectUploadResponse;
+
+            if (!result.success) {
+                throw new Error(result.message || 'Upload failed');
+            }
+
+            const nodes = mapIndividualsToNodes(result.data.individuals);
+            const edges = mapFamiliesToEdges(
+                result.data.families,
+                result.data.individuals,
+            );
+
+            set({
+                nodes,
+                edges,
+                sessionId: projectId,
+                activeProjectId: projectId,
+                stats: {
+                    individualsCount: result.data.nodeCount,
+                    familiesCount: result.data.edgeCount,
+                },
+                isLoading: false,
+                error: null,
+            });
+
+            get().applyLayout();
+        } catch (err) {
+            set({
+                isLoading: false,
+                error: err instanceof Error ? err.message : 'Unknown error',
+            });
+        }
+    },
+
+    /**
+     * Loads (hydrates) a project from the database. Called when a user opens
+     * an existing project from the Dashboard.
+     */
+    loadProject: async (projectId: string) => {
+        set({ isHydrating: true, error: null });
+
+        try {
+            const response = await fetch(`${API_BASE}/projects/${projectId}`, {
+                headers: await authHeaders(),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.status}`);
+            }
+
+            const result = (await response.json()) as ProjectDetailResponse;
+
+            if (!result.success) {
+                throw new Error('Failed to load project');
+            }
+
+            const { individuals, families, nodeCount, edgeCount } = result.data;
+
+            // If the project has no data yet, just mark it as active
+            if (nodeCount === 0) {
+                set({
+                    nodes: [],
+                    edges: [],
+                    sessionId: projectId,
+                    activeProjectId: projectId,
+                    stats: null,
+                    isHydrating: false,
+                    error: null,
+                });
+                return;
+            }
+
+            const nodes = mapIndividualsToNodes(individuals);
+            const edges = mapFamiliesToEdges(families, individuals);
+
+            set({
+                nodes,
+                edges,
+                sessionId: projectId,
+                activeProjectId: projectId,
+                stats: {
+                    individualsCount: nodeCount,
+                    familiesCount: edgeCount,
+                },
+                isHydrating: false,
+                error: null,
+            });
+
+            get().applyLayout();
+        } catch (err) {
+            set({
+                isHydrating: false,
                 error: err instanceof Error ? err.message : 'Unknown error',
             });
         }
@@ -473,8 +609,10 @@ export const useTreeStore = create<TreeState>((set, get) => ({
             nodes: [],
             edges: [],
             isLoading: false,
+            isHydrating: false,
             error: null,
             sessionId: null,
+            activeProjectId: null,
             stats: null,
         });
     },

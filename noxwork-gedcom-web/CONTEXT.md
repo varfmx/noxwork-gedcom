@@ -1,7 +1,7 @@
 # noxwork-gedcom-web — Project Context
 
-> **Last updated:** 2026-02-27
-> **Status:** Phase 5 — Email Auth Flow ✅
+> **Last updated:** 2026-02-28
+> **Status:** Phase 6 — Persistence Layer (Upload + Hydration) ✅
 > **Runtime:** React 19 + Vite 7 + TypeScript 5.9 (strict mode)
 > **Target:** ES2022, bundler module resolution
 
@@ -119,9 +119,13 @@ features/
 Single store `useTreeStore` manages the entire tree lifecycle:
 
 ```
-uploadAndParse(fileContent) → fetch /api/gedcom/upload → map to nodes/edges → set state
+uploadAndParse(fileContent)           → fetch /api/gedcom/upload        → map to nodes/edges → set state
+uploadToProject(projectId, content)   → fetch /api/projects/:id/upload  → map to nodes/edges → set state
+loadProject(projectId)                → fetch /api/projects/:id         → map to nodes/edges → set state (hydration)
 ```
 
+- **Hydration:** `loadProject()` fetches persisted data from `GET /api/projects/:id` and reconstructs the React Flow canvas, reusing the same `mapIndividualsToNodes` / `mapFamiliesToEdges` mapping functions. An `isHydrating` flag controls the loading spinner.
+- **Project-aware upload:** When `activeProjectId` is set, `FileUploader` routes through `uploadToProject()` instead of `uploadAndParse()`, persisting directly to the database.
 - **Nodes:** Each `GedcomIndividual` → React Flow `Node<PersonNodeData>` of type `'person'`
 - **Edges:** Built from `GedcomFamily` records:
   - `husbandId ↔ wifeId` = Spouse edge (straight, dashed, orange `#FF8C00`)
@@ -367,19 +371,28 @@ Key flags: `strict: true`, `noUnusedLocals`, `noUnusedParameters`, `erasableSynt
 - [x] `Toast` system: Noxwork-branded toast notifications with success/error/info/warning variants
 - [x] `ToastProvider` wraps the app in `main.tsx`
 
-### 🔲 Phase 6 — Interactivity
+### ✅ Phase 6 — Persistence Layer (Upload + Hydration)
+- [x] `useTreeStore.loadProject(projectId)` — Fetches `GET /api/projects/:id` and hydrates React Flow canvas
+- [x] `useTreeStore.uploadToProject(projectId, fileContent, fileName?)` — Uploads GEDCOM to `POST /api/projects/:id/upload` and refreshes canvas
+- [x] `isHydrating` state flag — Controls Noxwork Cobalt Blue loading spinner during project hydration
+- [x] `VisualizerPage` reads `:id` from `useParams` and auto-calls `loadProject()` on mount
+- [x] `FileUploader` routes through `uploadToProject()` when `activeProjectId` is set
+- [x] New types: `ProjectDetailResponse`, `ProjectUploadResponse` in `types/api.ts`
+- [x] i18n: `visualizer.canvas.loadingProject` key added (EN + ES)
+
+### 🔲 Phase 7 — Interactivity
 - [ ] Click node → detail panel / modal
 - [ ] Search / filter individuals
 - [ ] Highlight kinship paths on hover
 - [ ] Zoom to selected individual
 
-### 🔲 Phase 6 — Polish
+### 🔲 Phase 7 — Polish
 - [ ] Responsive sidebar (collapsible on mobile)
 - [ ] Keyboard shortcuts
 - [ ] Export tree as PNG/PDF
 - [ ] Loading skeleton during parse
 
-### 🔲 Phase 7 — Deployment
+### 🔲 Phase 8 — Deployment
 - [ ] Vercel deploy configuration
 - [ ] Environment variable management
 - [ ] Production API URL configuration
@@ -407,3 +420,6 @@ Key flags: `strict: true`, `noUnusedLocals`, `noUnusedParameters`, `erasableSynt
 17. **Password recovery flow** — The `UpdatePassword` page listens for `onAuthStateChange(PASSWORD_RECOVERY)` which fires when Supabase exchanges the recovery hash fragment; the form is locked until this event fires
 18. **Unconfirmed users** — Check `user.email_confirmed_at === null` (not falsy, as Google SSO users auto-confirm); unconfirmed users are allowed to reach the dashboard but see a warning banner with a resend button
 19. **`supabase.auth.resend()`** — Used for signup confirmation resend; pass `{ type: 'signup', email }` matching the Supabase SDK v2 API
+20. **Project hydration** — `VisualizerPage` reads `useParams<{ id }>()` and calls `loadProject()` in a `useEffect`; the `isHydrating` flag prevents the empty-state from flashing before data arrives
+21. **Upload routing** — `FileUploader` checks `activeProjectId` from `useProjectStore`; if set, GEDCOM uploads go through `uploadToProject()` (persisted to DB) instead of `uploadAndParse()` (in-memory session only)
+22. **`loadProject` auth headers** — `useTreeStore` imports `getAccessToken()` and attaches `Authorization: Bearer` just like `useProjectStore`, since `GET /projects/:id` is a protected endpoint

@@ -19,6 +19,7 @@ import { ProjectService } from './project.service';
 import { GedcomExporterService } from './gedcom-exporter.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { RenameProjectDto } from './dto/rename-project.dto';
+import { UploadToProjectDto } from './dto/upload-to-project.dto';
 
 /**
  * ProjectController — REST endpoints for genealogy project management.
@@ -29,6 +30,8 @@ import { RenameProjectDto } from './dto/rename-project.dto';
  * Routes:
  *   GET    /api/projects             → list all projects for the caller
  *   POST   /api/projects             → create a new empty project
+ *   GET    /api/projects/:id         → get full project detail (persons + relationships)
+ *   POST   /api/projects/:id/upload  → parse & persist a GEDCOM file into a project
  *   GET    /api/projects/:id/export  → download project as .ged file
  *   PATCH  /api/projects/:id         → rename a project
  *   DELETE /api/projects/:id         → delete a project (cascade)
@@ -81,6 +84,59 @@ export class ProjectController {
         return {
             success: true,
             message: `Project "${project.name}" created successfully.`,
+            data: project,
+        };
+    }
+
+    /**
+     * GET /api/projects/:id
+     *
+     * Returns a single project with all its Person and Relationship data,
+     * reconstructed into the GedcomIndividual / GedcomFamily shapes the
+     * frontend expects. This is the "hydration" endpoint used when a
+     * user opens an existing project from the Dashboard.
+     */
+    @Get(':id')
+    async findOne(
+        @GetUser('id') userId: string,
+        @Param('id') projectId: string,
+    ) {
+        const project = await this.projectService.findOneForUser(
+            userId,
+            projectId,
+        );
+
+        return {
+            success: true,
+            data: project,
+        };
+    }
+
+    /**
+     * POST /api/projects/:id/upload
+     *
+     * Parses a GEDCOM file and persists all individuals and families
+     * into the database, linked to the specified project.
+     * If the project already has data, existing records are replaced.
+     *
+     * Body: { fileContent: string, fileName?: string }
+     */
+    @Post(':id/upload')
+    @HttpCode(HttpStatus.OK)
+    async uploadToProject(
+        @GetUser('id') userId: string,
+        @Param('id') projectId: string,
+        @Body() dto: UploadToProjectDto,
+    ) {
+        const project = await this.projectService.uploadToProject(
+            userId,
+            projectId,
+            dto,
+        );
+
+        return {
+            success: true,
+            message: `Successfully uploaded ${project.nodeCount} individuals and ${project.edgeCount} relationships.`,
             data: project,
         };
     }
