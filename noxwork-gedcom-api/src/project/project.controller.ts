@@ -8,12 +8,15 @@ import {
     Param,
     Patch,
     Post,
+    Res,
     UseGuards,
 } from '@nestjs/common';
+import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import type { AuthenticatedUser } from '../auth/interfaces';
 import { ProjectService } from './project.service';
+import { GedcomExporterService } from './gedcom-exporter.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { RenameProjectDto } from './dto/rename-project.dto';
 
@@ -24,15 +27,19 @@ import { RenameProjectDto } from './dto/rename-project.dto';
  * Ownership is enforced in ProjectService — users can only access their own data.
  *
  * Routes:
- *   GET    /api/projects           → list all projects for the caller
- *   POST   /api/projects           → create a new empty project
- *   PATCH  /api/projects/:id       → rename a project
- *   DELETE /api/projects/:id       → delete a project (cascade)
+ *   GET    /api/projects             → list all projects for the caller
+ *   POST   /api/projects             → create a new empty project
+ *   GET    /api/projects/:id/export  → download project as .ged file
+ *   PATCH  /api/projects/:id         → rename a project
+ *   DELETE /api/projects/:id         → delete a project (cascade)
  */
 @UseGuards(JwtAuthGuard)
 @Controller('projects')
 export class ProjectController {
-    constructor(private readonly projectService: ProjectService) {}
+    constructor(
+        private readonly projectService: ProjectService,
+        private readonly gedcomExporter: GedcomExporterService,
+    ) {}
 
     /**
      * GET /api/projects
@@ -76,6 +83,38 @@ export class ProjectController {
             message: `Project "${project.name}" created successfully.`,
             data: project,
         };
+    }
+
+    /**
+     * GET /api/projects/:id/export
+     *
+     * Generates a GEDCOM 5.5.1 file from the project's stored Person and
+     * Relationship records and streams it as a file download.
+     *
+     * Response headers:
+     *   Content-Type: text/plain; charset=utf-8
+     *   Content-Disposition: attachment; filename="<project-name>.ged"
+     *
+     * Returns 404 if the project does not exist for the authenticated user.
+     */
+    @Get(':id/export')
+    async exportGedcom(
+        @GetUser() user: AuthenticatedUser,
+        @Param('id') projectId: string,
+        @Res() res: Response,
+    ): Promise<void> {
+        const { filename, content } = await this.gedcomExporter.export(
+            projectId,
+            user.id,
+        );
+
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.setHeader(
+            'Content-Disposition',
+            `attachment; filename="${filename}"`,
+        );
+        res.setHeader('Content-Length', Buffer.byteLength(content, 'utf-8'));
+        res.send(content);
     }
 
     /**

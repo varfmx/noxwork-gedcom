@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { ProjectController } from './project.controller';
 import { ProjectService } from './project.service';
+import { GedcomExporterService } from './gedcom-exporter.service';
 
 /**
  * ProjectModule — Encapsulates CRUD for genealogy projects.
@@ -13,7 +14,7 @@ import { ProjectService } from './project.service';
 @Module({
     imports: [AuthModule],
     controllers: [ProjectController],
-    providers: [ProjectService],
-    exports: [ProjectService],
+    providers: [ProjectService, GedcomExporterService],
+    exports: [ProjectService, GedcomExporterService],
 })
 export class ProjectModule {}
