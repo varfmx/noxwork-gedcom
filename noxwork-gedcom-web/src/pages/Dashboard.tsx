@@ -1,0 +1,305 @@
+import { useEffect, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store/useAuthStore';
+import { useProjectStore } from '../store/useProjectStore';
+import { ProjectTable } from '../features/dashboard/ProjectTable';
+import { EmptyState } from '../features/dashboard/EmptyState';
+
+/* ─── Create Project Modal ────────────────────────────────────── */
+
+interface CreateModalProps {
+    onClose: () => void;
+}
+
+function CreateProjectModal({ onClose }: CreateModalProps) {
+    const { createProject } = useProjectStore();
+    const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => { inputRef.current?.focus(); }, []);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!name.trim()) return;
+        setIsSubmitting(true);
+        await createProject(name.trim(), description.trim() || undefined);
+        setIsSubmitting(false);
+        onClose();
+    };
+
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+            onClick={onClose}
+        >
+            <div
+                className="bg-nox-surface-light border border-nox-surface-lighter rounded-2xl shadow-2xl w-full max-w-md p-6"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <h2 className="text-lg font-bold text-nox-text mb-1">New Genealogy Project</h2>
+                <p className="text-nox-text-muted text-sm mb-5">
+                    Create an empty tree. You can upload a GEDCOM file later.
+                </p>
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="text-xs font-semibold text-nox-text-muted uppercase tracking-wider block mb-1.5">
+                            Project Name *
+                        </label>
+                        <input
+                            ref={inputRef}
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            placeholder="e.g. The Johnson Family"
+                            maxLength={120}
+                            className="
+                                w-full bg-nox-surface border border-nox-surface-lighter rounded-xl
+                                px-4 py-2.5 text-sm text-nox-text placeholder:text-nox-text-muted
+                                focus:outline-none focus:ring-2 focus:ring-nox-cobalt/40 focus:border-nox-cobalt
+                                transition-all
+                            "
+                        />
+                    </div>
+
+                    <div>
+                        <label className="text-xs font-semibold text-nox-text-muted uppercase tracking-wider block mb-1.5">
+                            Description <span className="normal-case font-normal">(optional)</span>
+                        </label>
+                        <textarea
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder="Brief description…"
+                            rows={2}
+                            maxLength={500}
+                            className="
+                                w-full bg-nox-surface border border-nox-surface-lighter rounded-xl
+                                px-4 py-2.5 text-sm text-nox-text placeholder:text-nox-text-muted
+                                focus:outline-none focus:ring-2 focus:ring-nox-cobalt/40 focus:border-nox-cobalt
+                                resize-none transition-all
+                            "
+                        />
+                    </div>
+
+                    <div className="flex items-center gap-3 pt-1">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="
+                                flex-1 py-2.5 rounded-xl text-sm font-medium
+                                bg-nox-surface border border-nox-surface-lighter
+                                text-nox-text-muted hover:text-nox-text hover:border-nox-text-muted
+                                transition-colors duration-200
+                            "
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={!name.trim() || isSubmitting}
+                            className="
+                                flex-1 py-2.5 rounded-xl text-sm font-semibold
+                                bg-nox-orange hover:bg-nox-orange-dark text-white
+                                shadow-lg shadow-nox-orange/20
+                                disabled:opacity-50 disabled:cursor-not-allowed
+                                transition-all duration-200
+                            "
+                        >
+                            {isSubmitting ? 'Creating…' : 'Create Tree'}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+/* ─── Dashboard ───────────────────────────────────────────────── */
+
+export default function Dashboard() {
+    const navigate = useNavigate();
+    const { user, signOut } = useAuthStore();
+    const { projects, isLoading, error, fetchProjects, clearError } = useProjectStore();
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    // Load projects on mount
+    useEffect(() => {
+        fetchProjects();
+    }, [fetchProjects]);
+
+    const filtered = projects.filter((p) =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()),
+    );
+
+    const userInitial = (user?.user_metadata?.['full_name'] as string)?.[0]?.toUpperCase()
+        ?? user?.email?.[0]?.toUpperCase()
+        ?? 'U';
+    const userDisplayName = (user?.user_metadata?.['full_name'] as string) ?? user?.email ?? '';
+
+    return (
+        <div className="min-h-screen bg-nox-surface flex flex-col">
+            {/* ── Top Nav ── */}
+            <header className="sticky top-0 z-30 bg-nox-surface/90 backdrop-blur-md border-b border-nox-surface-lighter">
+                <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
+                    {/* Logo */}
+                    <button
+                        onClick={() => navigate('/dashboard')}
+                        className="flex items-center gap-2.5 flex-shrink-0"
+                    >
+                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-nox-cobalt to-nox-orange flex items-center justify-center text-white font-black text-sm">
+                            N
+                        </div>
+                        <span className="text-sm font-bold text-nox-text tracking-tight hidden sm:block">
+                            Noxwork GEDCOM
+                        </span>
+                    </button>
+
+                    {/* Search */}
+                    <div className="flex-1 max-w-xs relative">
+                        <svg
+                            className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-nox-text-muted pointer-events-none"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1116.65 16.65z" />
+                        </svg>
+                        <input
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search projects…"
+                            className="
+                                w-full bg-nox-surface-light border border-nox-surface-lighter rounded-lg
+                                pl-8 pr-3 py-1.5 text-xs text-nox-text placeholder:text-nox-text-muted
+                                focus:outline-none focus:ring-1 focus:ring-nox-cobalt/50 focus:border-nox-cobalt
+                                transition-all
+                            "
+                        />
+                    </div>
+
+                    {/* Right actions */}
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setShowCreateModal(true)}
+                            className="
+                                flex items-center gap-1.5 px-3 py-1.5 rounded-lg
+                                bg-nox-orange hover:bg-nox-orange-dark text-white
+                                text-xs font-semibold transition-colors duration-200
+                                shadow-lg shadow-nox-orange/20
+                            "
+                        >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
+                            <span className="hidden sm:inline">New Tree</span>
+                        </button>
+
+                        {/* User avatar + sign out */}
+                        <div className="flex items-center gap-2 pl-2 border-l border-nox-surface-lighter">
+                            <div
+                                className="w-7 h-7 rounded-full bg-gradient-to-br from-nox-cobalt to-nox-orange flex items-center justify-center text-white text-xs font-bold cursor-default"
+                                title={userDisplayName}
+                            >
+                                {userInitial}
+                            </div>
+                            <button
+                                onClick={signOut}
+                                className="text-xs text-nox-text-muted hover:text-nox-danger transition-colors"
+                                title="Sign out"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            {/* ── Main Content ── */}
+            <main className="flex-1 max-w-6xl mx-auto w-full px-6 py-8">
+                {/* Page title */}
+                <div className="flex items-center justify-between mb-6">
+                    <div>
+                        <h1 className="text-2xl font-bold text-nox-text">
+                            My Projects
+                        </h1>
+                        <p className="text-nox-text-muted text-sm mt-0.5">
+                            {projects.length > 0
+                                ? `${projects.length} genealogy tree${projects.length !== 1 ? 's' : ''}`
+                                : 'Manage your genealogy trees'}
+                        </p>
+                    </div>
+
+                    {projects.length > 0 && (
+                        <button
+                            onClick={() => setShowCreateModal(true)}
+                            className="
+                                hidden md:flex items-center gap-2 px-4 py-2 rounded-xl
+                                bg-nox-orange hover:bg-nox-orange-dark text-white
+                                text-sm font-semibold
+                                shadow-lg shadow-nox-orange/20
+                                transition-colors duration-200
+                            "
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
+                            New Tree
+                        </button>
+                    )}
+                </div>
+
+                {/* Error banner */}
+                {error && (
+                    <div className="mb-4 flex items-center justify-between bg-nox-danger/10 border border-nox-danger/30 rounded-xl px-4 py-3">
+                        <p className="text-sm text-nox-danger">{error}</p>
+                        <button onClick={clearError} className="text-nox-danger hover:text-nox-danger/70">✕</button>
+                    </div>
+                )}
+
+                {/* Loading skeleton */}
+                {isLoading && (
+                    <div className="space-y-2">
+                        {[1, 2, 3].map((i) => (
+                            <div key={i} className="h-16 rounded-xl bg-nox-surface-light animate-pulse" />
+                        ))}
+                    </div>
+                )}
+
+                {/* Content */}
+                {!isLoading && (
+                    <>
+                        {projects.length === 0 ? (
+                            <EmptyState onCreated={() => fetchProjects()} />
+                        ) : filtered.length === 0 ? (
+                            <div className="text-center py-16 text-nox-text-muted">
+                                <p className="text-base">No projects match "{searchQuery}"</p>
+                                <button
+                                    onClick={() => setSearchQuery('')}
+                                    className="mt-2 text-sm text-nox-cobalt-light hover:underline"
+                                >
+                                    Clear search
+                                </button>
+                            </div>
+                        ) : (
+                            <ProjectTable projects={filtered} />
+                        )}
+                    </>
+                )}
+            </main>
+
+            {/* ── Footer ── */}
+            <footer className="border-t border-nox-surface-lighter py-4 px-6">
+                <p className="text-center text-[11px] text-nox-text-muted">
+                    © 2026 Noxwork Technologies — Engineering Innovation Labs
+                </p>
+            </footer>
+
+            {/* ── Modals ── */}
+            {showCreateModal && (
+                <CreateProjectModal onClose={() => setShowCreateModal(false)} />
+            )}
+        </div>
+    );
+}

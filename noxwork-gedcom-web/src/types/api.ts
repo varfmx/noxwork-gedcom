@@ -1,3 +1,15 @@
+/* ─── Project / Dashboard Types ─────────────────────────────── */
+
+export interface ProjectSummary {
+    id: string;
+    name: string;
+    description: string | null;
+    nodeCount: number;
+    edgeCount: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
 /* ─── Backend API Response Types ─────────────────────────────── */
 
 export interface ApiDetectedRole {

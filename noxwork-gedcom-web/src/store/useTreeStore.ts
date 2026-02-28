@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import {
     type Node,
     type Edge,
-    type OnNodesChange,
     type OnEdgesChange,
     applyNodeChanges,
     applyEdgeChanges,
@@ -102,7 +101,7 @@ interface TreeState {
 
     // Actions
     uploadAndParse: (fileContent: string, fileName?: string) => Promise<void>;
-    onNodesChange: OnNodesChange;
+    onNodesChange: (changes: NodeChange<Node<PersonNodeData>>[]) => void;
     onEdgesChange: OnEdgesChange;
     applyLayout: () => void;
     reset: () => void;
