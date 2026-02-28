@@ -23,6 +23,8 @@ export default function LoginPage() {
     const [mode, setMode] = useState<AuthMode>('sign-in');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isResending, setIsResending] = useState(false);
@@ -40,7 +42,7 @@ export default function LoginPage() {
                 addToast(result.error, 'error');
             }
         } else {
-            const result = await signUpWithEmail(email.trim().toLowerCase(), password);
+            const result = await signUpWithEmail(email.trim().toLowerCase(), password, firstName, lastName);
             if (result.error) {
                 addToast(result.error, 'error');
             } else {
@@ -72,6 +74,8 @@ export default function LoginPage() {
         setMode((m) => (m === 'sign-in' ? 'sign-up' : 'sign-in'));
         setEmailJustRegistered(null);
         setPassword('');
+        setFirstName('');
+        setLastName('');
     };
 
     return (
@@ -140,6 +144,41 @@ export default function LoginPage() {
 
                     {/* ── Email form ── */}
                     <form onSubmit={handleEmailSubmit} className="space-y-3 mb-4">
+
+                        {/* First / Last name — sign-up only */}
+                        {mode === 'sign-up' && (
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    value={firstName}
+                                    onChange={(e) => setFirstName(e.target.value)}
+                                    placeholder="First name"
+                                    required
+                                    autoComplete="given-name"
+                                    className="
+                                        w-1/2 bg-nox-surface border border-nox-surface-lighter rounded-xl
+                                        px-4 py-2.5 text-sm text-nox-text placeholder:text-nox-text-muted
+                                        focus:outline-none focus:ring-2 focus:ring-nox-orange/40 focus:border-nox-orange
+                                        transition-all
+                                    "
+                                />
+                                <input
+                                    type="text"
+                                    value={lastName}
+                                    onChange={(e) => setLastName(e.target.value)}
+                                    placeholder="Last name"
+                                    required
+                                    autoComplete="family-name"
+                                    className="
+                                        w-1/2 bg-nox-surface border border-nox-surface-lighter rounded-xl
+                                        px-4 py-2.5 text-sm text-nox-text placeholder:text-nox-text-muted
+                                        focus:outline-none focus:ring-2 focus:ring-nox-orange/40 focus:border-nox-orange
+                                        transition-all
+                                    "
+                                />
+                            </div>
+                        )}
+
                         <div>
                             <input
                                 type="email"
@@ -204,7 +243,12 @@ export default function LoginPage() {
 
                         <button
                             type="submit"
-                            disabled={!email.trim() || !password || isSubmitting}
+                            disabled={
+                                !email.trim() ||
+                                !password ||
+                                (mode === 'sign-up' && (!firstName.trim() || !lastName.trim())) ||
+                                isSubmitting
+                            }
                             className="
                                 w-full py-2.5 rounded-xl text-sm font-semibold
                                 bg-nox-orange hover:bg-nox-orange-dark text-white

@@ -16,7 +16,7 @@ interface AuthState {
     // Actions
     signInWithGoogle: () => Promise<void>;
     signInWithEmail: (email: string, password: string) => Promise<AuthResult>;
-    signUpWithEmail: (email: string, password: string) => Promise<AuthResult>;
+    signUpWithEmail: (email: string, password: string, firstName: string, lastName: string) => Promise<AuthResult>;
     resetPasswordForEmail: (email: string) => Promise<AuthResult>;
     updatePassword: (password: string) => Promise<AuthResult>;
     resendConfirmation: (email: string) => Promise<AuthResult>;
@@ -62,16 +62,24 @@ export const useAuthStore = create<AuthState>((set) => ({
     },
 
     /**
-     * Register a new user with email and password.
+     * Register a new user with email, password and display name.
+     * `first_name` / `last_name` are stored in `user_metadata` so that
+     * the backend UserSyncService can persist them in the Prisma User table
+     * on the very first authenticated request.
+     *
      * Supabase sends a confirmation email — unconfirmed users have
      * `user.email_confirmed_at === null`.
      */
-    signUpWithEmail: async (email, password) => {
+    signUpWithEmail: async (email, password, firstName, lastName) => {
         const { error } = await supabase.auth.signUp({
             email,
             password,
             options: {
                 emailRedirectTo: `${window.location.origin}/auth/callback`,
+                data: {
+                    first_name: firstName.trim(),
+                    last_name: lastName.trim(),
+                },
             },
         });
         if (error) return { error: error.message };
