@@ -206,7 +206,7 @@ export function ProjectTable({ projects }: ProjectTableProps) {
     };
 
     return (
-        <div className="w-full overflow-x-auto rounded-xl border border-nox-surface-lighter shadow-lg">
+        <div className="w-full rounded-xl border border-nox-surface-lighter shadow-lg overflow-visible">
             <table className="w-full text-sm">
                 <thead>
                     <tr className="border-b border-nox-surface-lighter bg-nox-surface-light">

@@ -14,6 +14,7 @@ export default function VisualizerPage() {
     const sessionId = useTreeStore((s) => s.sessionId);
     const reset = useTreeStore((s) => s.reset);
     const activeProjectId = useProjectStore((s) => s.activeProjectId);
+    const activeProject = useProjectStore((s) => s.projects.find((p) => p.id === s.activeProjectId));
 
     const handleBackToDashboard = () => {
         reset();
@@ -63,7 +64,7 @@ export default function VisualizerPage() {
                     {activeProjectId && (
                         <div className="mt-2 px-2 py-1 rounded-md bg-nox-cobalt/10 border border-nox-cobalt/20">
                             <p className="text-[10px] text-nox-cobalt-light font-medium truncate">
-                                Project active
+                                {activeProject?.name ?? 'Project active'}
                             </p>
                         </div>
                     )}
