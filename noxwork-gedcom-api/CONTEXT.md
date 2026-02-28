@@ -1,7 +1,7 @@
 # noxwork-gedcom-api — Project Context
 
-> **Last updated:** 2026-02-26
-> **Status:** Phase 3 — Prisma Integration & Editor Sync ✅
+> **Last updated:** 2026-02-27
+> **Status:** Phase 4 — User Auth & Project Management ✅
 > **Runtime:** NestJS 11 + TypeScript 5.7 (strict mode)
 > **Node target:** ES2023
 
@@ -43,9 +43,29 @@ The **frontend** (React 19 + Vite + React Flow) will consume this API to render 
 noxwork-gedcom-api/
 ├── src/
 │   ├── main.ts                                  # Bootstrap: CORS, ValidationPipe, global prefix /api
-│   ├── app.module.ts                            # Root module, imports GedcomModule
+│   ├── app.module.ts                            # Root module, imports all feature modules
 │   ├── app.controller.ts                        # Default health check (GET /api)
 │   ├── app.service.ts                           # Default service
+│   │
+│   ├── auth/                                    # ══ Auth Module (Supabase JWT) ══
+│   │   ├── auth.module.ts                       # Registers PassportModule + SupabaseJwtStrategy
+│   │   ├── supabase-jwt.strategy.ts             # PassportStrategy('supabase-jwt') via HS256
+│   │   ├── jwt-auth.guard.ts                    # JwtAuthGuard extends AuthGuard('supabase-jwt')
+│   │   ├── decorators/
+│   │   │   └── get-user.decorator.ts            # @GetUser() / @GetUser('id') param decorator
+│   │   └── interfaces/
+│   │       ├── index.ts                         # Barrel export (export type)
+│   │       ├── jwt-payload.interface.ts         # JwtPayload (Supabase JWT claims)
+│   │       └── authenticated-user.interface.ts  # AuthenticatedUser { id, email }
+│   │
+│   ├── project/                                 # ══ Project (Tree CRUD) Module ══
+│   │   ├── project.module.ts                    # Imports AuthModule, provides ProjectService
+│   │   ├── project.controller.ts                # REST: GET/POST/PATCH/DELETE /api/projects
+│   │   ├── project.service.ts                   # Business logic + ownership enforcement
+│   │   └── dto/
+│   │       ├── index.ts                         # Barrel export
+│   │       ├── create-project.dto.ts            # CreateProjectDto (name, description?)
+│   │       └── rename-project.dto.ts            # RenameProjectDto (name)
 │   │
 │   └── gedcom/                                  # ══ GEDCOM Domain Module ══
 │       ├── gedcom.module.ts                     # NestJS module with DI wiring
@@ -74,8 +94,8 @@ noxwork-gedcom-api/
 │           ├── gedcom.repository.ts             # GedcomRepository interface + GEDCOM_REPOSITORY Symbol token
 │           └── in-memory-gedcom.repository.ts   # InMemoryGedcomRepository (Map-based, dev only)
 │
-├── prisma/                                      # Prisma ORM schema and migrations (at monorepo root)
-│   └── schema.prisma                            # Tree, Person, Relationship models
+├── prisma/                                      # Prisma ORM schema and migrations
+│   └── schema.prisma                            # User, Tree, Person, Relationship models
 │
 ├── test/                                        # e2e tests
 │   ├── jest-e2e.json
@@ -151,11 +171,42 @@ Because `isolatedModules` and `emitDecoratorMetadata` are both enabled:
 
 All routes are prefixed with `/api` (set in `main.ts`).
 
+### Public (no auth required)
+
 | Method | Route                    | Body / Params                                  | Response                                                   |
 |--------|--------------------------|-------------------------------------------------|------------------------------------------------------------|
 | `GET`  | `/api`                   | —                                               | `"Hello World!"` (default health check)                    |
 | `POST` | `/api/gedcom/upload`     | `{ fileContent: string, fileName?: string }`    | `{ success, message, data: { sessionId, stats, individuals[], families[], metadata } }` |
 | `GET`  | `/api/gedcom/session/:id`| `:id` = session UUID                            | `{ success, data: { individuals[], families[], metadata } }` |
+
+### Protected (requires `Authorization: Bearer <supabase-jwt>`)
+
+| Method   | Route                  | Body / Params               | Response                                                              |
+|----------|------------------------|-----------------------------|-----------------------------------------------------------------------|
+| `GET`    | `/api/projects`        | —                           | `{ success, data: ProjectSummary[] }`                                 |
+| `POST`   | `/api/projects`        | `{ name, description? }`   | `{ success, message, data: ProjectSummary }`                          |
+| `PATCH`  | `/api/projects/:id`    | `{ name }`                  | `{ success, message, data: ProjectSummary }`                          |
+| `DELETE` | `/api/projects/:id`    | —                           | `204 No Content`                                                      |
+
+#### ProjectSummary shape
+
+```ts
+{
+  id:          string;   // Tree UUID
+  name:        string;
+  description: string | null;
+  nodeCount:   number;   // Person records in this tree
+  edgeCount:   number;   // Relationship records in this tree
+  createdAt:   Date;
+  updatedAt:   Date;
+}
+```
+
+### Security model
+- All `/api/projects` routes are guarded by `JwtAuthGuard` (Supabase HS256 JWT validation).
+- Ownership is enforced at the **Prisma query level**: every read/write scopes `where` to include the caller's `userId`.
+- Existence leak prevention: attempting to access someone else's project returns **404**, not 403.
+- `DELETE` cascades to `Person` and `Relationship` records via Prisma schema `onDelete: Cascade`.
 
 ### Request / Response Examples
 
@@ -317,13 +368,16 @@ The `GedcomEngine` currently supports GEDCOM 5.5/5.5.1 tags:
 - [x] Generational rank assignment from parent-child edges
 - [x] Spouse alignment post-processing (same Y level)
 
-### 🔲 Phase 4 — Database Integration
-- [ ] Prisma ORM setup with PostgreSQL 16+
-- [ ] `PrismaGedcomRepository` implementing `GedcomRepository` interface
-- [ ] Normalized schema: `Person` entity + `Relationship` edges (N:N)
-- [ ] JSONB columns for non-standard GEDCOM extensions
-- [ ] Transactional bulk inserts for large files
-- [ ] Swap `useClass` in `gedcom.module.ts`
+### ✅ Phase 4 — User Authentication & Project Management
+- [x] `User` model in Prisma schema (id = Supabase `sub` claim)
+- [x] `Tree.userId` FK with `onDelete: Cascade`, `Tree_userId_idx` index
+- [x] Prisma migration: `20260228_add_user_auth_and_project_ownership`
+- [x] `AuthModule`: `SupabaseJwtStrategy` (passport-jwt, HS256, `SUPABASE_JWT_SECRET`)
+- [x] `JwtAuthGuard` (extends `AuthGuard('supabase-jwt')`)
+- [x] `@GetUser()` param decorator to extract `AuthenticatedUser` from request
+- [x] `ProjectController` — `GET/POST/PATCH/DELETE /api/projects`
+- [x] `ProjectService` — ownership-scoped queries, `ensureUser()` upsert on create
+- [x] `saveTree()` updated to require `userId` parameter
 
 ### 🔲 Phase 5 — Export Engine
 - [ ] Generate valid GEDCOM 7.0 standard files from database
@@ -358,3 +412,7 @@ The `GedcomEngine` currently supports GEDCOM 5.5/5.5.1 tags:
 7. **Responses follow a consistent envelope:** `{ success: boolean, message?: string, data: T | null }`
 8. **`RelationshipResolver` uses per-path visited sets** — NOT a global visited set. This is critical for multi-role detection
 9. **Jest 30 uses `--testPathPatterns`** (plural), not `--testPathPattern` (singular)
+10. **`SUPABASE_JWT_SECRET` must be set** — strategy throws at bootstrap if missing; grab from Supabase Dashboard → Settings → API → JWT Secret
+11. **`User.id` is the Supabase `sub` claim** (UUID), NOT auto-generated by Prisma — keeps SSO identity in sync
+12. **`ensureUser()` is called on every `POST /projects`** — idempotent upsert handles first-time SSO logins without extra roundtrips
+13. **Ownership leak prevention** — `delete/rename` fetches by `{ id }` then checks `userId`; returns **404** (not 403) when record doesn't belong to caller

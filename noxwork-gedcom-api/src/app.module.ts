@@ -4,9 +4,11 @@ import { AppService } from './app.service';
 import { GedcomModule } from './gedcom/gedcom.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { NodeModule } from './node/node.module';
+import { AuthModule } from './auth/auth.module';
+import { ProjectModule } from './project/project.module';
 
 @Module({
-  imports: [PrismaModule, GedcomModule, NodeModule],
+  imports: [PrismaModule, AuthModule, GedcomModule, NodeModule, ProjectModule],
   controllers: [AppController],
   providers: [AppService],
 })

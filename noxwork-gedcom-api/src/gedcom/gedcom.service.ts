@@ -89,15 +89,15 @@ export class GedcomService {
      * Saves a parsed tree (nodes and edges) into the database using a transaction.
      * Implements upsert logic based on gedcomId and treeId.
      */
-    async saveTree(treeId: string, nodes: TreePersonNode[], edges: TreeRelationshipEdge[]) {
+    async saveTree(treeId: string, userId: string, nodes: TreePersonNode[], edges: TreeRelationshipEdge[]) {
         this.logger.log(`Saving tree ${treeId} with ${nodes.length} nodes and ${edges.length} edges...`);
 
         return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-            // 1. Ensure the tree exists
+            // 1. Ensure the tree exists (requires a valid userId — caller must be authenticated)
             const tree = await tx.tree.upsert({
                 where: { id: treeId },
                 update: {},
-                create: { id: treeId, name: `Tree ${treeId}` },
+                create: { id: treeId, name: `Tree ${treeId}`, userId },
             });
 
             // 2. Upsert all persons (nodes)
