@@ -148,9 +148,11 @@ export default function Dashboard() {
                         onClick={() => navigate('/dashboard')}
                         className="flex items-center gap-2.5 flex-shrink-0"
                     >
-                        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-nox-cobalt to-nox-orange flex items-center justify-center text-white font-black text-sm">
-                            N
-                        </div>
+                        <img
+                            src="/noxwork_logo_white.png"
+                            alt="Noxwork"
+                            className="h-7 w-auto object-contain"
+                        />
                         <span className="text-sm font-bold text-nox-text tracking-tight hidden sm:block">
                             Noxwork GEDCOM
                         </span>

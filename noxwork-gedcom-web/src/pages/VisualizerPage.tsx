@@ -28,9 +28,11 @@ export default function VisualizerPage() {
                 <div className="px-4 py-4 border-b border-nox-surface-lighter">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2.5">
-                            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-nox-cobalt to-nox-orange flex items-center justify-center text-white font-bold text-xs shadow-lg">
-                                N
-                            </div>
+                            <img
+                                src="/noxwork_logo_white.png"
+                                alt="Noxwork"
+                                className="h-7 w-auto object-contain flex-shrink-0"
+                            />
                             <div>
                                 <h1 className="text-sm font-bold text-nox-text tracking-tight">
                                     Noxwork GEDCOM

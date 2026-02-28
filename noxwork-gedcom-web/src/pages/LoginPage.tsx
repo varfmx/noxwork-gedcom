@@ -25,10 +25,12 @@ export default function LoginPage() {
 
                 <div className="relative bg-nox-surface-light border border-nox-surface-lighter rounded-2xl p-8 shadow-2xl">
                     {/* Logo */}
-                    <div className="flex flex-col items-center gap-3 mb-8">
-                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-nox-cobalt to-nox-orange flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-nox-cobalt/30">
-                            N
-                        </div>
+                    <div className="flex flex-col items-center gap-4 mb-8">
+                        <img
+                            src="/noxwork_logo_white.png"
+                            alt="Noxwork"
+                            className="h-14 w-auto object-contain drop-shadow-lg"
+                        />
                         <div className="text-center">
                             <h1 className="text-xl font-bold text-nox-text tracking-tight">
                                 Noxwork GEDCOM
