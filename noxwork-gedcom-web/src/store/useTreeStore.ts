@@ -19,7 +19,11 @@ import type {
 
 /* ─── Constants ──────────────────────────────────────────────── */
 
-const API_BASE = '/api';
+// In dev the Vite proxy rewrites /api → http://localhost:3000 so no env var needed.
+// In production (Vercel) set VITE_API_URL to your deployed backend URL.
+const API_BASE = (import.meta.env.VITE_API_URL as string | undefined)
+    ? `${import.meta.env.VITE_API_URL as string}/api`
+    : '/api';
 
 /** Approximate dimensions of PersonNode for layout calculation */
 const NODE_WIDTH = 260;

@@ -10,9 +10,13 @@ async function bootstrap() {
   app.use(require('express').json({ limit: '50mb' }));
   app.use(require('express').urlencoded({ limit: '50mb', extended: true }));
 
-  // Enable CORS for the frontend application
+  // Enable CORS — supports a comma-separated list of allowed origins.
+  // e.g. CORS_ORIGIN="http://localhost:5173,https://noxwork-gedcom.vercel.app"
+  const rawOrigin = process.env['CORS_ORIGIN'] ?? 'http://localhost:5173';
+  const allowedOrigins = rawOrigin.split(',').map((o) => o.trim()).filter(Boolean);
+
   app.enableCors({
-    origin: process.env['CORS_ORIGIN'] ?? 'http://localhost:5173',
+    origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
