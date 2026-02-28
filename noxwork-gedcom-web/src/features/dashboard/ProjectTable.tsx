@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import type { ProjectSummary } from '../../types/api';
 import { useProjectStore } from '../../store/useProjectStore';
 import { useTreeStore } from '../../store/useTreeStore';
+import { UserAvatar } from '../../components/UserAvatar';
 
 /* ─── Helpers ─────────────────────────────────────────────────── */
 
@@ -190,9 +191,13 @@ function InlineRename({ project, onDone }: InlineRenameProps) {
 
 interface ProjectTableProps {
     projects: ProjectSummary[];
+    /** Full name (firstName + lastName) or email fallback for the Owner column */
+    ownerDisplayName: string;
+    /** Google profile photo URL from Supabase user_metadata, if available */
+    ownerAvatarUrl?: string | null;
 }
 
-export function ProjectTable({ projects }: ProjectTableProps) {
+export function ProjectTable({ projects, ownerDisplayName, ownerAvatarUrl }: ProjectTableProps) {
     const navigate = useNavigate();
     const setActiveProject = useProjectStore((s) => s.setActiveProject);
     const reset = useTreeStore((s) => s.reset);
@@ -269,10 +274,15 @@ export function ProjectTable({ projects }: ProjectTableProps) {
                             {/* Owner */}
                             <td className="px-5 py-4">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-nox-cobalt to-nox-orange flex items-center justify-center text-white text-[10px] font-bold">
-                                        Y
-                                    </div>
-                                    <span className="text-nox-text-muted text-xs">You</span>
+                                    <UserAvatar
+                                        avatarUrl={ownerAvatarUrl}
+                                        firstName={ownerDisplayName.split(' ')[0]}
+                                        email={ownerDisplayName.includes('@') ? ownerDisplayName : undefined}
+                                        size="sm"
+                                    />
+                                    <span className="text-nox-text-muted text-xs truncate max-w-[120px]" title={ownerDisplayName}>
+                                        {ownerDisplayName}
+                                    </span>
                                 </div>
                             </td>
 

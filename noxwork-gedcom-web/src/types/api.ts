@@ -1,3 +1,16 @@
+/* ─── User Profile ───────────────────────────────────────────── */
+
+/**
+ * Prisma User row returned by GET /api/users/me.
+ * Mirrors the User model fields exposed by UsersController.
+ */
+export interface UserProfile {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+}
+
 /* ─── Project / Dashboard Types ─────────────────────────────── */
 
 export interface ProjectSummary {

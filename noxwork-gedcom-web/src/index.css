@@ -65,3 +65,10 @@ body,
 .react-flow__controls button:hover {
   background-color: var(--color-nox-surface-lighter);
 }
+
+/* ─── Skeleton shimmer keyframe ──────────────────────────────── */
+
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}

@@ -2,7 +2,10 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { useProjectStore } from '../store/useProjectStore';
+import { useUserStore } from '../store/useUserStore';
 import { useToast } from '../components/Toast';
+import { UserAvatar } from '../components/UserAvatar';
+import { SkeletonText } from '../components/Skeleton';
 import { ProjectTable } from '../features/dashboard/ProjectTable';
 import { EmptyState } from '../features/dashboard/EmptyState';
 
@@ -120,8 +123,9 @@ function CreateProjectModal({ onClose }: CreateModalProps) {
 
 export default function Dashboard() {
     const navigate = useNavigate();
-    const { user, signOut, resendConfirmation } = useAuthStore();
+    const { user, session, signOut, resendConfirmation } = useAuthStore();
     const { projects, isLoading, error, fetchProjects, clearError } = useProjectStore();
+    const { profile, isLoadingProfile, fetchProfile } = useUserStore();
     const { addToast } = useToast();
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -146,14 +150,20 @@ export default function Dashboard() {
         fetchProjects();
     }, [fetchProjects]);
 
+    // Fetch Prisma profile once the session is ready
+    useEffect(() => {
+        if (session) fetchProfile();
+    }, [session, fetchProfile]);
+
     const filtered = projects.filter((p) =>
         p.name.toLowerCase().includes(searchQuery.toLowerCase()),
     );
 
-    const userInitial = (user?.user_metadata?.['full_name'] as string)?.[0]?.toUpperCase()
-        ?? user?.email?.[0]?.toUpperCase()
-        ?? 'U';
-    const userDisplayName = (user?.user_metadata?.['full_name'] as string) ?? user?.email ?? '';
+    // Derive display values — profile (Prisma) takes priority over Supabase metadata
+    const avatarUrl = (user?.user_metadata?.['avatar_url'] as string | undefined) ?? null;
+    const ownerDisplayName = profile
+        ? [profile.firstName, profile.lastName].filter(Boolean).join(' ') || profile.email
+        : user?.email ?? '';
 
     return (
         <div className="min-h-screen bg-nox-surface flex flex-col">
@@ -215,12 +225,14 @@ export default function Dashboard() {
 
                         {/* User avatar + sign out */}
                         <div className="flex items-center gap-2 pl-2 border-l border-nox-surface-lighter">
-                            <div
-                                className="w-7 h-7 rounded-full bg-gradient-to-br from-nox-cobalt to-nox-orange flex items-center justify-center text-white text-xs font-bold cursor-default"
-                                title={userDisplayName}
-                            >
-                                {userInitial}
-                            </div>
+                            <UserAvatar
+                                avatarUrl={avatarUrl}
+                                firstName={profile?.firstName}
+                                lastName={profile?.lastName}
+                                email={user?.email}
+                                size="sm"
+                                loading={isLoadingProfile}
+                            />
                             <button
                                 onClick={signOut}
                                 className="text-xs text-nox-text-muted hover:text-nox-danger transition-colors"
@@ -237,12 +249,27 @@ export default function Dashboard() {
 
             {/* ── Main Content ── */}
             <main className="flex-1 max-w-6xl mx-auto w-full px-6 py-8">
+                {/* Welcome greeting */}
+                <div className="mb-6">
+                    {isLoadingProfile ? (
+                        <SkeletonText className="w-48 h-7 mb-1" />
+                    ) : (
+                        <h1 className="text-2xl font-bold text-nox-text">
+                            Welcome back,{' '}
+                            <span className="text-nox-orange">
+                                {profile?.firstName ?? user?.email?.split('@')[0] ?? 'there'}
+                            </span>
+                            {' '}👋
+                        </h1>
+                    )}
+                </div>
+
                 {/* Page title */}
                 <div className="flex items-center justify-between mb-6">
                     <div>
-                        <h1 className="text-2xl font-bold text-nox-text">
+                        <h2 className="text-lg font-semibold text-nox-text">
                             My Projects
-                        </h1>
+                        </h2>
                         <p className="text-nox-text-muted text-sm mt-0.5">
                             {projects.length > 0
                                 ? `${projects.length} genealogy tree${projects.length !== 1 ? 's' : ''}`
@@ -331,7 +358,11 @@ export default function Dashboard() {
                                 </button>
                             </div>
                         ) : (
-                            <ProjectTable projects={filtered} />
+                            <ProjectTable
+                            projects={filtered}
+                            ownerDisplayName={ownerDisplayName}
+                            ownerAvatarUrl={avatarUrl}
+                        />
                         )}
                     </>
                 )}
