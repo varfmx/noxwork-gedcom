@@ -33,26 +33,25 @@ export function LanguageSwitcher() {
             title={`Switch to ${current === 'en' ? 'Español' : 'English'}`}
             className="
                 flex items-center gap-1.5
-                px-2.5 py-1 rounded-lg
-                border border-nox-surface-lighter
-                text-nox-text-muted hover:text-nox-text
-                hover:border-nox-cobalt/50 hover:bg-nox-cobalt/5
+                px-2.5 py-1.5 rounded-lg
+                bg-nox-surface-light border border-nox-surface-lighter
+                text-nox-text
+                hover:border-nox-cobalt hover:bg-nox-cobalt/10
                 transition-all duration-200
                 text-xs font-semibold select-none
             "
         >
-            <span>{FLAGS[current]}</span>
-            {LANGS.map((lang) => (
-                <span
-                    key={lang}
-                    className={lang === current ? 'text-nox-text font-bold' : 'text-nox-text-muted'}
-                >
-                    {LABELS[lang]}
-                    {lang !== LANGS[LANGS.length - 1] && (
-                        <span className="text-nox-surface-lighter mx-0.5">|</span>
-                    )}
-                </span>
-            ))}
+            <span className="text-base leading-none">{FLAGS[current]}</span>
+            <span className="text-nox-text font-bold">{LABELS[current]}</span>
+            <svg
+                className="w-3 h-3 text-nox-text-muted"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                strokeWidth={2.5}
+            >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
         </button>
     );
 }
