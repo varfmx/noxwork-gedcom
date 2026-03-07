@@ -58,7 +58,10 @@
       "subtitle": "Genealogy Visualizer",
       "import": "Import",
       "legend": "Legend",
-      "projectActive": "Project active"
+      "projectActive": "Project active",
+      "treeStats": "Tree Statistics",
+      "genderBreakdown": "Gender Breakdown",
+      "reimport": "Re-import GEDCOM"
     },
     "legend": {
       "male": "Male",

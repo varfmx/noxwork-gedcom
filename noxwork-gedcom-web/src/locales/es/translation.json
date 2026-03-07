@@ -58,7 +58,10 @@
       "subtitle": "Visualizador Genealógico",
       "import": "Importar",
       "legend": "Leyenda",
-      "projectActive": "Proyecto activo"
+      "projectActive": "Proyecto activo",
+      "treeStats": "Estadísticas del Árbol",
+      "genderBreakdown": "Distribución por Género",
+      "reimport": "Re-importar GEDCOM"
     },
     "legend": {
       "male": "Masculino",
