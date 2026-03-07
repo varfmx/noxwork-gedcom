@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { TreeCanvas } from '../features/visualizer/TreeCanvas';
@@ -27,10 +27,35 @@ export default function VisualizerPage() {
     const activeProject = useProjectStore((s) => s.projects.find((p) => p.id === s.activeProjectId));
     const setActiveProject = useProjectStore((s) => s.setActiveProject);
 
+    const createPerson = useTreeStore((s) => s.createPerson);
+
     const [showReimport, setShowReimport] = useState(false);
+    const [showCreateForm, setShowCreateForm] = useState(false);
+    const [newFirstName, setNewFirstName] = useState('');
+    const [newLastName, setNewLastName] = useState('');
+    const [newGender, setNewGender] = useState<'M' | 'F' | 'U'>('U');
+    const [isCreating, setIsCreating] = useState(false);
 
     /** Whether the tree has persisted data loaded */
     const hasTreeData = nodes.length > 0;
+
+    const handleCreatePerson = useCallback(async () => {
+        if (!newFirstName.trim()) return;
+        setIsCreating(true);
+        try {
+            await createPerson({
+                firstName: newFirstName.trim(),
+                lastName: newLastName.trim() || undefined,
+                gender: newGender,
+            });
+            setNewFirstName('');
+            setNewLastName('');
+            setNewGender('U');
+            setShowCreateForm(false);
+        } finally {
+            setIsCreating(false);
+        }
+    }, [newFirstName, newLastName, newGender, createPerson]);
 
     // Hydrate tree data when opening a project from the dashboard
     useEffect(() => {
@@ -179,6 +204,94 @@ export default function VisualizerPage() {
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+
+                            {/* ── Create New Person ── */}
+                            <div>
+                                <h2 className="text-xs font-semibold text-nox-text-muted uppercase tracking-wider mb-3">
+                                    {t('editor.addPerson')}
+                                </h2>
+                                {!showCreateForm ? (
+                                    <button
+                                        onClick={() => setShowCreateForm(true)}
+                                        className="
+                                            w-full py-2.5 rounded-xl text-sm font-semibold
+                                            bg-nox-orange hover:bg-nox-orange-dark text-white
+                                            shadow-lg shadow-nox-orange/20
+                                            transition-all duration-200
+                                            flex items-center justify-center gap-2
+                                        "
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                        </svg>
+                                        {t('editor.addPerson')}
+                                    </button>
+                                ) : (
+                                    <div className="bg-nox-surface-light rounded-xl border border-nox-surface-lighter p-3 space-y-3">
+                                        <input
+                                            value={newFirstName}
+                                            onChange={(e) => setNewFirstName(e.target.value)}
+                                            placeholder={t('editor.firstNamePlaceholder')}
+                                            autoFocus
+                                            className="
+                                                w-full bg-nox-surface border border-nox-surface-lighter rounded-lg
+                                                px-3 py-2 text-sm text-nox-text placeholder:text-nox-text-muted
+                                                focus:outline-none focus:ring-2 focus:ring-nox-cobalt/40 focus:border-nox-cobalt
+                                                transition-all
+                                            "
+                                        />
+                                        <input
+                                            value={newLastName}
+                                            onChange={(e) => setNewLastName(e.target.value)}
+                                            placeholder={t('editor.lastNamePlaceholder')}
+                                            className="
+                                                w-full bg-nox-surface border border-nox-surface-lighter rounded-lg
+                                                px-3 py-2 text-sm text-nox-text placeholder:text-nox-text-muted
+                                                focus:outline-none focus:ring-2 focus:ring-nox-cobalt/40 focus:border-nox-cobalt
+                                                transition-all
+                                            "
+                                        />
+                                        <div className="grid grid-cols-3 gap-1.5">
+                                            {([['M', '♂'], ['F', '♀'], ['U', '?']] as const).map(([v, icon]) => (
+                                                <button
+                                                    key={v}
+                                                    type="button"
+                                                    onClick={() => setNewGender(v)}
+                                                    className={`
+                                                        py-1.5 rounded-lg text-xs font-medium border transition-all
+                                                        ${newGender === v
+                                                            ? 'bg-nox-cobalt/20 border-nox-cobalt text-nox-cobalt-light'
+                                                            : 'bg-nox-surface border-nox-surface-lighter text-nox-text-muted'
+                                                        }
+                                                    `}
+                                                >
+                                                    {icon}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => { setShowCreateForm(false); setNewFirstName(''); setNewLastName(''); }}
+                                                className="flex-1 py-2 rounded-lg text-xs text-nox-text-muted border border-nox-surface-lighter hover:text-nox-text transition-colors"
+                                            >
+                                                {t('common.cancel')}
+                                            </button>
+                                            <button
+                                                onClick={handleCreatePerson}
+                                                disabled={!newFirstName.trim() || isCreating}
+                                                className="
+                                                    flex-1 py-2 rounded-lg text-xs font-semibold
+                                                    bg-nox-orange hover:bg-nox-orange-dark text-white
+                                                    disabled:opacity-50 disabled:cursor-not-allowed
+                                                    transition-all
+                                                "
+                                            >
+                                                {isCreating ? '...' : t('editor.create')}
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Legend */}

@@ -20,6 +20,9 @@ import { GedcomExporterService } from './gedcom-exporter.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { RenameProjectDto } from './dto/rename-project.dto';
 import { UploadToProjectDto } from './dto/upload-to-project.dto';
+import { CreatePersonDto } from './dto/create-person.dto';
+import { UpdatePersonDto } from './dto/update-person.dto';
+import { CreateRelationshipDto } from './dto/create-relationship.dto';
 
 /**
  * ProjectController — REST endpoints for genealogy project management.
@@ -28,13 +31,17 @@ import { UploadToProjectDto } from './dto/upload-to-project.dto';
  * Ownership is enforced in ProjectService — users can only access their own data.
  *
  * Routes:
- *   GET    /api/projects             → list all projects for the caller
- *   POST   /api/projects             → create a new empty project
- *   GET    /api/projects/:id         → get full project detail (persons + relationships)
- *   POST   /api/projects/:id/upload  → parse & persist a GEDCOM file into a project
- *   GET    /api/projects/:id/export  → download project as .ged file
- *   PATCH  /api/projects/:id         → rename a project
- *   DELETE /api/projects/:id         → delete a project (cascade)
+ *   GET    /api/projects                          → list all projects for the caller
+ *   POST   /api/projects                          → create a new empty project
+ *   GET    /api/projects/:id                      → get full project detail (persons + relationships)
+ *   POST   /api/projects/:id/upload               → parse & persist a GEDCOM file into a project
+ *   GET    /api/projects/:id/export               → download project as .ged file
+ *   PATCH  /api/projects/:id                      → rename a project
+ *   DELETE /api/projects/:id                      → delete a project (cascade)
+ *   POST   /api/projects/:id/persons              → create a new person
+ *   PATCH  /api/projects/:id/persons/:personId    → update a person
+ *   DELETE /api/projects/:id/persons/:personId    → delete a person
+ *   POST   /api/projects/:id/relationships        → create a relationship
  */
 @UseGuards(JwtAuthGuard)
 @Controller('projects')
@@ -42,7 +49,7 @@ export class ProjectController {
     constructor(
         private readonly projectService: ProjectService,
         private readonly gedcomExporter: GedcomExporterService,
-    ) {}
+    ) { }
 
     /**
      * GET /api/projects
@@ -214,5 +221,85 @@ export class ProjectController {
         @Param('id') projectId: string,
     ): Promise<void> {
         await this.projectService.delete(userId, projectId);
+    }
+
+    // ── Person CRUD ──────────────────────────────────────────────────────────
+
+    /**
+     * POST /api/projects/:id/persons
+     *
+     * Creates a new Person within the specified project.
+     * Body: { firstName: string, lastName?: string, gender?: string, birthDate?: string }
+     */
+    @Post(':id/persons')
+    async createPerson(
+        @GetUser('id') userId: string,
+        @Param('id') projectId: string,
+        @Body() dto: CreatePersonDto,
+    ) {
+        const person = await this.projectService.createPerson(userId, projectId, dto);
+
+        return {
+            success: true,
+            data: person,
+        };
+    }
+
+    /**
+     * PATCH /api/projects/:id/persons/:personId
+     *
+     * Updates an existing Person's details within the specified project.
+     * Body: { firstName?: string, lastName?: string, gender?: string, birthDate?: string }
+     */
+    @Patch(':id/persons/:personId')
+    async updatePerson(
+        @GetUser('id') userId: string,
+        @Param('id') projectId: string,
+        @Param('personId') personId: string,
+        @Body() dto: UpdatePersonDto,
+    ) {
+        const person = await this.projectService.updatePerson(userId, projectId, personId, dto);
+
+        return {
+            success: true,
+            data: person,
+        };
+    }
+
+    /**
+     * DELETE /api/projects/:id/persons/:personId
+     *
+     * Deletes a Person and all their associated Relationships.
+     */
+    @Delete(':id/persons/:personId')
+    @HttpCode(HttpStatus.NO_CONTENT)
+    async deletePerson(
+        @GetUser('id') userId: string,
+        @Param('id') projectId: string,
+        @Param('personId') personId: string,
+    ): Promise<void> {
+        await this.projectService.deletePerson(userId, projectId, personId);
+    }
+
+    // ── Relationship CRUD ────────────────────────────────────────────────────
+
+    /**
+     * POST /api/projects/:id/relationships
+     *
+     * Creates a new Relationship between two Persons in the project.
+     * Body: { type: string, subType?: string, sourceId: string, targetId: string }
+     */
+    @Post(':id/relationships')
+    async createRelationship(
+        @GetUser('id') userId: string,
+        @Param('id') projectId: string,
+        @Body() dto: CreateRelationshipDto,
+    ) {
+        const relationship = await this.projectService.createRelationship(userId, projectId, dto);
+
+        return {
+            success: true,
+            data: relationship,
+        };
     }
 }

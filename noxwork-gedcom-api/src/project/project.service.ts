@@ -11,6 +11,9 @@ import type { CreateProjectDto } from './dto/create-project.dto';
 import type { RenameProjectDto } from './dto/rename-project.dto';
 import type { UploadToProjectDto } from './dto/upload-to-project.dto';
 import type { AuthenticatedUser } from '../auth/interfaces';
+import type { CreatePersonDto } from './dto/create-person.dto';
+import type { UpdatePersonDto } from './dto/update-person.dto';
+import type { CreateRelationshipDto } from './dto/create-relationship.dto';
 import type { GedcomIndividual, GedcomFamily } from '../gedcom/interfaces';
 
 // ─── Public response shapes ───────────────────────────────────────────────────
@@ -48,7 +51,7 @@ export interface ProjectDetail extends ProjectSummary {
 export class ProjectService {
     private readonly logger = new Logger(ProjectService.name);
 
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(private readonly prisma: PrismaService) { }
 
     // ── Helper: upsert User row so first-time SSO logins are handled ──────────
 
@@ -424,6 +427,192 @@ export class ProjectService {
 
         // 4. Return the full project detail (same shape as findOneForUser)
         return this.findOneForUser(userId, projectId);
+    }
+
+    // ── POST /projects/:id/persons ────────────────────────────────────────────
+
+    /**
+     * Creates a single Person within an existing project.
+     * Returns the created person's DB record (including generated UUID).
+     */
+    async createPerson(
+        userId: string,
+        projectId: string,
+        dto: CreatePersonDto,
+    ) {
+        const tree = await this.prisma.tree.findFirst({
+            where: { id: projectId, userId },
+            select: { id: true },
+        });
+
+        if (!tree) {
+            throw new NotFoundException(`Project ${projectId} not found.`);
+        }
+
+        const person = await this.prisma.person.create({
+            data: {
+                treeId: projectId,
+                firstName: dto.firstName,
+                lastName: dto.lastName ?? null,
+                gender: dto.gender ?? 'U',
+                birthDate: null,
+                metadata: {
+                    birthDate: dto.birthDate ?? null,
+                    birthPlace: null,
+                    deathDate: null,
+                    deathPlace: null,
+                    familySpouseIds: [],
+                    familyChildId: null,
+                },
+            },
+        });
+
+        this.logger.log(
+            `Person created: id=${person.id} name="${dto.firstName}" project=${projectId}`,
+        );
+
+        return person;
+    }
+
+    // ── PATCH /projects/:projectId/persons/:personId ──────────────────────────
+
+    /**
+     * Updates an existing Person's editable fields.
+     * Only the provided fields are updated (partial update).
+     */
+    async updatePerson(
+        userId: string,
+        projectId: string,
+        personId: string,
+        dto: UpdatePersonDto,
+    ) {
+        // Verify ownership
+        const tree = await this.prisma.tree.findFirst({
+            where: { id: projectId, userId },
+            select: { id: true },
+        });
+
+        if (!tree) {
+            throw new NotFoundException(`Project ${projectId} not found.`);
+        }
+
+        // Verify person belongs to this tree
+        const person = await this.prisma.person.findFirst({
+            where: { id: personId, treeId: projectId },
+        });
+
+        if (!person) {
+            throw new NotFoundException(`Person ${personId} not found in project ${projectId}.`);
+        }
+
+        // Build the update payload
+        const updateData: Record<string, unknown> = {};
+        if (dto.firstName !== undefined) updateData['firstName'] = dto.firstName;
+        if (dto.lastName !== undefined) updateData['lastName'] = dto.lastName;
+        if (dto.gender !== undefined) updateData['gender'] = dto.gender;
+
+        // Update birthDate inside metadata
+        if (dto.birthDate !== undefined) {
+            const currentMeta = (person.metadata as Record<string, unknown>) ?? {};
+            updateData['metadata'] = {
+                ...currentMeta,
+                birthDate: dto.birthDate,
+            };
+        }
+
+        const updated = await this.prisma.person.update({
+            where: { id: personId },
+            data: updateData,
+        });
+
+        this.logger.log(
+            `Person updated: id=${personId} project=${projectId}`,
+        );
+
+        return updated;
+    }
+
+    // ── DELETE /projects/:projectId/persons/:personId ─────────────────────────
+
+    /**
+     * Deletes a Person and cascades to remove all associated Relationships.
+     * The Prisma schema has `onDelete: Cascade` on both SourcePerson and
+     * TargetPerson relations, so edges are cleaned up automatically.
+     */
+    async deletePerson(
+        userId: string,
+        projectId: string,
+        personId: string,
+    ) {
+        const tree = await this.prisma.tree.findFirst({
+            where: { id: projectId, userId },
+            select: { id: true },
+        });
+
+        if (!tree) {
+            throw new NotFoundException(`Project ${projectId} not found.`);
+        }
+
+        const person = await this.prisma.person.findFirst({
+            where: { id: personId, treeId: projectId },
+            select: { id: true },
+        });
+
+        if (!person) {
+            throw new NotFoundException(`Person ${personId} not found in project ${projectId}.`);
+        }
+
+        await this.prisma.person.delete({ where: { id: personId } });
+
+        this.logger.log(
+            `Person deleted: id=${personId} project=${projectId}`,
+        );
+    }
+
+    // ── POST /projects/:id/relationships ──────────────────────────────────────
+
+    /**
+     * Creates a Relationship between two Persons within the same project.
+     */
+    async createRelationship(
+        userId: string,
+        projectId: string,
+        dto: CreateRelationshipDto,
+    ) {
+        const tree = await this.prisma.tree.findFirst({
+            where: { id: projectId, userId },
+            select: { id: true },
+        });
+
+        if (!tree) {
+            throw new NotFoundException(`Project ${projectId} not found.`);
+        }
+
+        // Verify both persons belong to this tree
+        const persons = await this.prisma.person.findMany({
+            where: { id: { in: [dto.sourceId, dto.targetId] }, treeId: projectId },
+            select: { id: true },
+        });
+
+        if (persons.length < 2) {
+            throw new NotFoundException('One or both persons not found in this project.');
+        }
+
+        const relationship = await this.prisma.relationship.create({
+            data: {
+                treeId: projectId,
+                type: dto.type,
+                subType: dto.subType ?? null,
+                sourceId: dto.sourceId,
+                targetId: dto.targetId,
+            },
+        });
+
+        this.logger.log(
+            `Relationship created: ${dto.type} ${dto.sourceId} → ${dto.targetId} project=${projectId}`,
+        );
+
+        return relationship;
     }
 
     // ── Helper: Reconstruct GedcomFamily[] from relationships ──────────────────

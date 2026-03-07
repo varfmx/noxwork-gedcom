@@ -155,5 +155,26 @@
       "number": "Debe incluir al menos un número.",
       "special": "Debe incluir al menos un carácter especial (ej. !@#$%)."
     }
+  },
+  "editor": {
+    "title": "Editar Persona",
+    "firstName": "Nombre",
+    "lastName": "Apellido",
+    "gender": "Género",
+    "birthDate": "Fecha de Nacimiento",
+    "firstNamePlaceholder": "Ingrese el nombre",
+    "lastNamePlaceholder": "Ingrese el apellido",
+    "save": "Guardar Cambios",
+    "saving": "Guardando…",
+    "delete": "Eliminar Esta Persona",
+    "deleteConfirm": "¿Eliminar \"{{name}}\" y todas sus conexiones? Esto no se puede deshacer.",
+    "confirmDelete": "Sí, Eliminar",
+    "deleting": "Eliminando…",
+    "addPerson": "Crear Nueva Persona",
+    "create": "Crear",
+    "connectionType": "Tipo de Conexión",
+    "connectionTypeHint": "¿Qué tipo de relación es esta?",
+    "parentChildDesc": "El origen es padre/madre del destino",
+    "spouseDesc": "Pareja / matrimonio"
   }
 }

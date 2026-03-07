@@ -155,5 +155,26 @@
       "number": "Must include at least one number.",
       "special": "Must include at least one special character (e.g. !@#$%)."
     }
+  },
+  "editor": {
+    "title": "Edit Person",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "gender": "Gender",
+    "birthDate": "Birth Date",
+    "firstNamePlaceholder": "Enter first name",
+    "lastNamePlaceholder": "Enter last name",
+    "save": "Save Changes",
+    "saving": "Saving…",
+    "delete": "Delete This Person",
+    "deleteConfirm": "Delete \"{{name}}\" and all their connections? This cannot be undone.",
+    "confirmDelete": "Yes, Delete",
+    "deleting": "Deleting…",
+    "addPerson": "Create New Person",
+    "create": "Create",
+    "connectionType": "Connection Type",
+    "connectionTypeHint": "What type of relationship is this?",
+    "parentChildDesc": "Source is a parent of target",
+    "spouseDesc": "Partners / married couple"
   }
 }

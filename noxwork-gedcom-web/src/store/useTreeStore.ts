@@ -117,7 +117,13 @@ interface TreeState {
     applyLayout: () => void;
     reset: () => void;
 
-    // Sync Actions
+    // CRUD Actions
+    createPerson: (data: { firstName: string; lastName?: string; gender?: string; birthDate?: string }) => Promise<void>;
+    updatePerson: (personId: string, data: { firstName?: string; lastName?: string; gender?: string; birthDate?: string }) => Promise<void>;
+    deletePerson: (personId: string) => Promise<void>;
+    createRelationship: (sourceId: string, targetId: string, type: 'PARENT' | 'SPOUSE') => Promise<void>;
+
+    // Legacy Sync Actions
     addNode: (node: Node<PersonNodeData>) => Promise<void>;
     removeNode: (id: string) => Promise<void>;
     addEdge: (edge: Edge) => Promise<void>;
@@ -617,7 +623,191 @@ export const useTreeStore = create<TreeState>((set, get) => ({
         });
     },
 
-    // --- Sync Actions ---
+    // --- CRUD Actions ---
+
+    createPerson: async (data) => {
+        const projectId = get().activeProjectId;
+        if (!projectId) {
+            showToast('No active project', true);
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_BASE}/projects/${projectId}/persons`, {
+                method: 'POST',
+                headers: await authHeaders(),
+                body: JSON.stringify(data),
+            });
+            if (!res.ok) throw new Error('Failed to create person');
+            const json = await res.json();
+            const person = json.data;
+
+            // Create a new React Flow node from the API response
+            const newNode: Node<PersonNodeData> = {
+                id: person.id,
+                type: 'person',
+                position: { x: Math.random() * 400 + 100, y: Math.random() * 300 + 100 },
+                data: {
+                    label: [data.firstName, data.lastName].filter(Boolean).join(' '),
+                    fullName: [data.firstName, data.lastName].filter(Boolean).join(' '),
+                    givenName: data.firstName,
+                    surname: data.lastName ?? '',
+                    sex: (data.gender as 'M' | 'F' | 'U') ?? 'U',
+                    birthDate: data.birthDate ?? null,
+                    deathDate: null,
+                    birthPlace: null,
+                    detectedRoles: [],
+                    gedcomId: person.id,
+                },
+            };
+
+            set((s) => ({
+                nodes: [...s.nodes, newNode],
+                stats: s.stats
+                    ? { ...s.stats, individualsCount: s.stats.individualsCount + 1 }
+                    : { individualsCount: 1, familiesCount: 0 },
+            }));
+
+            showToast('Person created');
+        } catch (err) {
+            console.error(err);
+            showToast('Failed to create person', true);
+        }
+    },
+
+    updatePerson: async (personId, data) => {
+        const projectId = get().activeProjectId;
+        if (!projectId) return;
+
+        // Optimistic update
+        const previousNodes = get().nodes;
+        set({
+            nodes: previousNodes.map((n) =>
+                n.id === personId
+                    ? {
+                        ...n,
+                        data: {
+                            ...n.data,
+                            givenName: data.firstName ?? n.data.givenName,
+                            surname: data.lastName ?? n.data.surname,
+                            fullName: [data.firstName ?? n.data.givenName, data.lastName ?? n.data.surname]
+                                .filter(Boolean)
+                                .join(' '),
+                            label: [data.firstName ?? n.data.givenName, data.lastName ?? n.data.surname]
+                                .filter(Boolean)
+                                .join(' '),
+                            sex: (data.gender as 'M' | 'F' | 'U') ?? n.data.sex,
+                            birthDate: data.birthDate !== undefined ? (data.birthDate || null) : n.data.birthDate,
+                        },
+                    }
+                    : n,
+            ),
+        });
+
+        try {
+            const res = await fetch(`${API_BASE}/projects/${projectId}/persons/${personId}`, {
+                method: 'PATCH',
+                headers: await authHeaders(),
+                body: JSON.stringify(data),
+            });
+            if (!res.ok) throw new Error('Failed to update person');
+            showToast('Person updated');
+        } catch (err) {
+            console.error(err);
+            showToast('Failed to update person. Rolling back.', true);
+            set({ nodes: previousNodes });
+        }
+    },
+
+    deletePerson: async (personId) => {
+        const projectId = get().activeProjectId;
+        if (!projectId) return;
+
+        const previousNodes = get().nodes;
+        const previousEdges = get().edges;
+
+        // Optimistic update — remove node and all related edges
+        set({
+            nodes: previousNodes.filter((n) => n.id !== personId),
+            edges: previousEdges.filter((e) => e.source !== personId && e.target !== personId),
+            stats: get().stats
+                ? {
+                    individualsCount: Math.max(0, (get().stats?.individualsCount ?? 1) - 1),
+                    familiesCount: get().stats?.familiesCount ?? 0,
+                }
+                : null,
+        });
+
+        try {
+            const res = await fetch(`${API_BASE}/projects/${projectId}/persons/${personId}`, {
+                method: 'DELETE',
+                headers: await authHeaders(),
+            });
+            if (!res.ok) throw new Error('Failed to delete person');
+            showToast('Person deleted');
+        } catch (err) {
+            console.error(err);
+            showToast('Failed to delete person. Rolling back.', true);
+            set({ nodes: previousNodes, edges: previousEdges });
+        }
+    },
+
+    createRelationship: async (sourceId, targetId, type) => {
+        const projectId = get().activeProjectId;
+        if (!projectId) return;
+
+        const isSpouse = type === 'SPOUSE';
+
+        // Build the edge for React Flow
+        const newEdge: Edge = isSpouse
+            ? {
+                id: `spouse-manual-${Date.now()}`,
+                source: sourceId,
+                target: targetId,
+                sourceHandle: 'spouse-right',
+                targetHandle: 'spouse-left',
+                type: 'straight',
+                animated: false,
+                style: { stroke: '#FF8C00', strokeWidth: 2, strokeDasharray: '6 3' },
+                label: '♥',
+                data: { isSpouse: true },
+            }
+            : {
+                id: `child-manual-${Date.now()}`,
+                source: sourceId,
+                target: targetId,
+                sourceHandle: 'bottom',
+                targetHandle: 'top',
+                type: 'smoothstep',
+                animated: false,
+                style: { stroke: '#0047AB', strokeWidth: 2 },
+                data: { isSpouse: false },
+            };
+
+        // Optimistic
+        const previousEdges = get().edges;
+        set({ edges: [...previousEdges, newEdge] });
+
+        try {
+            const res = await fetch(`${API_BASE}/projects/${projectId}/relationships`, {
+                method: 'POST',
+                headers: await authHeaders(),
+                body: JSON.stringify({
+                    type,
+                    sourceId,
+                    targetId,
+                }),
+            });
+            if (!res.ok) throw new Error('Failed to create relationship');
+            showToast('Relationship created');
+        } catch (err) {
+            console.error(err);
+            showToast('Failed to create relationship. Rolling back.', true);
+            set({ edges: previousEdges });
+        }
+    },
+
+    // --- Legacy Sync Actions ---
 
     rollbackNodes: (snapshots: Node<PersonNodeData>[]) => {
         const snapshotMap = new Map(snapshots.map(s => [s.id, s]));
@@ -629,64 +819,16 @@ export const useTreeStore = create<TreeState>((set, get) => ({
     addNode: async (node: Node<PersonNodeData>) => {
         const previousNodes = get().nodes;
         set({ nodes: [...previousNodes, node] });
-
-        try {
-            // Assuming you have a POST /gedcom/node endpoint or similar.
-            // If not, you can adapt this to your actual creation endpoint.
-            // For now, we'll just simulate the optimistic update.
-            showToast('Node added locally');
-        } catch (err) {
-            console.error(err);
-            showToast('Failed to add node. Rolling back.', true);
-            set({ nodes: previousNodes }); // Rollback
-        }
+        showToast('Node added locally');
     },
 
     removeNode: async (id: string) => {
-        const previousNodes = get().nodes;
-        const previousEdges = get().edges;
-
-        // Optimistic update
-        set({
-            nodes: previousNodes.filter(n => n.id !== id),
-            edges: previousEdges.filter(e => e.source !== id && e.target !== id)
-        });
-
-        try {
-            const res = await fetch(`${API_BASE}/gedcom/node/${id}`, {
-                method: 'DELETE',
-            });
-            if (!res.ok) throw new Error('Failed to delete node');
-            showToast('Node deleted successfully');
-        } catch (err) {
-            console.error(err);
-            showToast('Failed to delete node. Rolling back.', true);
-            // Rollback
-            set({ nodes: previousNodes, edges: previousEdges });
-        }
+        // Delegate to the new deletePerson action
+        await get().deletePerson(id);
     },
 
     addEdge: async (edge: Edge) => {
         const previousEdges = get().edges;
         set({ edges: [...previousEdges, edge] });
-
-        try {
-            const res = await fetch(`${API_BASE}/gedcom/relationship`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    treeId: get().sessionId || 'default-tree', // Adjust based on your tree logic
-                    type: edge.data?.isSpouse ? 'SPOUSE' : 'PARENT',
-                    sourceId: edge.source,
-                    targetId: edge.target,
-                }),
-            });
-            if (!res.ok) throw new Error('Failed to create relationship');
-            showToast('Relationship created');
-        } catch (err) {
-            console.error(err);
-            showToast('Failed to create relationship. Rolling back.', true);
-            set({ edges: previousEdges }); // Rollback
-        }
     },
 }));
