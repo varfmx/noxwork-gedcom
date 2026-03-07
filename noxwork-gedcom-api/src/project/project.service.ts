@@ -496,14 +496,19 @@ export class ProjectService {
             throw new NotFoundException(`Project ${projectId} not found.`);
         }
 
-        // Verify person belongs to this tree
+        // Verify person belongs to this tree (personId may be a DB UUID or gedcomId)
         const person = await this.prisma.person.findFirst({
-            where: { id: personId, treeId: projectId },
+            where: {
+                treeId: projectId,
+                OR: [{ id: personId }, { gedcomId: personId }],
+            },
         });
 
         if (!person) {
             throw new NotFoundException(`Person ${personId} not found in project ${projectId}.`);
         }
+
+        const resolvedId = person.id;
 
         // Build the update payload
         const updateData: Record<string, unknown> = {};
@@ -521,7 +526,7 @@ export class ProjectService {
         }
 
         const updated = await this.prisma.person.update({
-            where: { id: personId },
+            where: { id: resolvedId },
             data: updateData,
         });
 
@@ -553,8 +558,12 @@ export class ProjectService {
             throw new NotFoundException(`Project ${projectId} not found.`);
         }
 
+        // personId may be a DB UUID or a gedcomId
         const person = await this.prisma.person.findFirst({
-            where: { id: personId, treeId: projectId },
+            where: {
+                treeId: projectId,
+                OR: [{ id: personId }, { gedcomId: personId }],
+            },
             select: { id: true },
         });
 
@@ -562,7 +571,7 @@ export class ProjectService {
             throw new NotFoundException(`Person ${personId} not found in project ${projectId}.`);
         }
 
-        await this.prisma.person.delete({ where: { id: personId } });
+        await this.prisma.person.delete({ where: { id: person.id } });
 
         this.logger.log(
             `Person deleted: id=${personId} project=${projectId}`,
@@ -573,6 +582,10 @@ export class ProjectService {
 
     /**
      * Creates a Relationship between two Persons within the same project.
+     *
+     * The sourceId/targetId may be either a database UUID or a gedcomId
+     * (GEDCOM-imported nodes use their gedcomId as the React Flow node ID).
+     * We resolve both to database UUIDs before creating the relationship.
      */
     async createRelationship(
         userId: string,
@@ -588,32 +601,41 @@ export class ProjectService {
             throw new NotFoundException(`Project ${projectId} not found.`);
         }
 
-        // Verify both persons belong to this tree
-        const persons = await this.prisma.person.findMany({
-            where: { id: { in: [dto.sourceId, dto.targetId] }, treeId: projectId },
-            select: { id: true },
-        });
+        // Resolve identifiers: each ID might be a DB UUID or a gedcomId
+        const resolvePersonId = async (identifier: string): Promise<string> => {
+            const person = await this.prisma.person.findFirst({
+                where: {
+                    treeId: projectId,
+                    OR: [{ id: identifier }, { gedcomId: identifier }],
+                },
+                select: { id: true },
+            });
+            if (!person) {
+                throw new NotFoundException(`Person "${identifier}" not found in project ${projectId}.`);
+            }
+            return person.id;
+        };
 
-        if (persons.length < 2) {
-            throw new NotFoundException('One or both persons not found in this project.');
-        }
+        const resolvedSourceId = await resolvePersonId(dto.sourceId);
+        const resolvedTargetId = await resolvePersonId(dto.targetId);
 
         const relationship = await this.prisma.relationship.create({
             data: {
                 treeId: projectId,
                 type: dto.type,
                 subType: dto.subType ?? null,
-                sourceId: dto.sourceId,
-                targetId: dto.targetId,
+                sourceId: resolvedSourceId,
+                targetId: resolvedTargetId,
             },
         });
 
         this.logger.log(
-            `Relationship created: ${dto.type} ${dto.sourceId} → ${dto.targetId} project=${projectId}`,
+            `Relationship created: ${dto.type} ${resolvedSourceId} → ${resolvedTargetId} project=${projectId}`,
         );
 
         return relationship;
     }
+
 
     // ── Helper: Reconstruct GedcomFamily[] from relationships ──────────────────
 
