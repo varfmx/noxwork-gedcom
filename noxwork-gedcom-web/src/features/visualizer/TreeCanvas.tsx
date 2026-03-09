@@ -1,9 +1,11 @@
 import { useMemo, useCallback, useState } from 'react';
 import {
     ReactFlow,
+    ReactFlowProvider,
     Background,
     Controls,
     MiniMap,
+    Panel,
     BackgroundVariant,
     type NodeTypes,
     type Connection,
@@ -16,6 +18,7 @@ import type { PersonNodeData } from '../../types/api';
 import { PersonNode } from './nodes/PersonNode';
 import { EditPersonPanel } from './EditPersonPanel';
 import { ConnectionTypeModal } from './ConnectionTypeModal';
+import { ExportButton } from './ExportButton';
 
 /* ─── Node Type Registry ─────────────────────────────────────── */
 
@@ -23,9 +26,16 @@ const nodeTypes: NodeTypes = {
     person: PersonNode,
 };
 
-/* ─── TreeCanvas Component ───────────────────────────────────── */
+/* ─── Props ──────────────────────────────────────────────────── */
 
-export function TreeCanvas() {
+interface TreeCanvasProps {
+    /** Project name used as the file name for exports */
+    projectName?: string;
+}
+
+/* ─── Inner Component (needs ReactFlowProvider ancestor) ────── */
+
+function TreeCanvasInner({ projectName }: TreeCanvasProps) {
     const nodes = useTreeStore((s) => s.nodes);
     const edges = useTreeStore((s) => s.edges);
     const onNodesChange = useTreeStore((s) => s.onNodesChange);
@@ -119,6 +129,11 @@ export function TreeCanvas() {
                     pannable
                     zoomable
                 />
+
+                {/* ── Export Button (top-right panel) ── */}
+                <Panel position="top-right">
+                    <ExportButton projectName={projectName} />
+                </Panel>
             </ReactFlow>
 
             {/* ── Edit Person Panel ── */}
@@ -137,5 +152,15 @@ export function TreeCanvas() {
                 />
             )}
         </div>
+    );
+}
+
+/* ─── TreeCanvas (wraps inner with provider) ─────────────────── */
+
+export function TreeCanvas({ projectName }: TreeCanvasProps) {
+    return (
+        <ReactFlowProvider>
+            <TreeCanvasInner projectName={projectName} />
+        </ReactFlowProvider>
     );
 }

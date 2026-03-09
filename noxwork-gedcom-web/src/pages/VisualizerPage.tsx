@@ -452,7 +452,7 @@ export default function VisualizerPage() {
                         </div>
                     </div>
                 ) : sessionId ? (
-                    <TreeCanvas />
+                    <TreeCanvas projectName={activeProject?.name} />
                 ) : (
                     <div className="absolute inset-0 flex items-center justify-center">
                         <div className="text-center space-y-4 max-w-md">

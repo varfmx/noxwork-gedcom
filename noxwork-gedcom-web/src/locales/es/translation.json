@@ -177,5 +177,14 @@
     "connectionTypeHint": "¿Qué tipo de relación es esta?",
     "parentChildDesc": "El origen es padre/madre del destino",
     "spouseDesc": "Pareja / matrimonio"
+  },
+  "export": {
+    "download": "Descargar",
+    "pngLabel": "Imagen PNG",
+    "pngHint": "Alta resolución (2×)",
+    "pdfLabel": "Documento PDF",
+    "pdfHint": "Formato para imprimir",
+    "generating": "Generando tu archivo…",
+    "generatingHint": "Preparando una captura para impresión"
   }
 }

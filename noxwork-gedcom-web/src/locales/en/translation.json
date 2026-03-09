@@ -177,5 +177,14 @@
     "connectionTypeHint": "What type of relationship is this?",
     "parentChildDesc": "Source is a parent of target",
     "spouseDesc": "Partners / married couple"
+  },
+  "export": {
+    "download": "Download",
+    "pngLabel": "PNG Image",
+    "pngHint": "High-res raster (2×)",
+    "pdfLabel": "PDF Document",
+    "pdfHint": "Printer-friendly vector",
+    "generating": "Generating your file…",
+    "generatingHint": "Preparing a print-friendly snapshot"
   }
 }
