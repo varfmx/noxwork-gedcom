@@ -2,7 +2,6 @@
 
 > A high-performance GEDCOM processing platform for parsing, analyzing, and visualizing complex family trees — built by **Fernando Valderrábano Reyes** at **Noxwork Labs**.
 
-
 ---
 
 ## Monorepo Structure
@@ -15,84 +14,57 @@ noxwork-gedcom/
 
 | Package | Tech | Status |
 |---------|------|--------|
-| **noxwork-gedcom-api** | NestJS 11 · TypeScript · Node.js | Active |
-| **noxwork-gedcom-web** | React 19 · Vite · React Flow · Tailwind CSS v4 | Active |
+| **noxwork-gedcom-api** | NestJS 11 · TypeScript · Prisma · PostgreSQL | Active |
+| **noxwork-gedcom-web** | React 19 · Vite · React Flow · Tailwind CSS v4 · Zustand | Active |
 
 ---
 
 ## noxwork-gedcom-api
 
-The backend service handles GEDCOM file parsing, relationship resolution, and data persistence.
+The backend service handles GEDCOM file parsing, relationship resolution, data persistence, and real-time tree editing.
 
 ### Key Features
 
 - **GEDCOM Engine** — Parses GEDCOM 5.5/5.5.1 files into structured JSON (INDI, FAM, HEAD records).
-- **Relationship Resolver** — Graph-based BFS kinship engine that detects all relationship types including complex multi-role cases (e.g., pedigree collapse, uncle-cousin overlaps).
-- **Session Storage** — In-memory repository with a pluggable interface designed for future Prisma/PostgreSQL integration.
+- **Relationship Resolver** — Graph-based multi-path BFS kinship engine that detects all relationship types including complex multi-role cases (pedigree collapse, uncle-cousin overlaps).
+- **Supabase JWT Auth** — All project endpoints are protected via Supabase ES256/RS256 JWKS validation with ownership enforcement.
+- **Prisma ORM Persistence** — PostgreSQL storage for Users, Trees, Persons, and Relationships with cascade delete.
+- **Person CRUD** — Create, update, and delete individuals within a project; dual ID resolution supports both GEDCOM IDs (`@I5@`) and database UUIDs.
+- **Relationship CRUD** — Create typed relationships (PARENT/SPOUSE) between persons.
+- **Position Persistence** — Batch-save canvas node positions into Person metadata JSON.
+- **GEDCOM Export** — Generate valid GEDCOM 5.5.1 files from database records.
 - **Strict Validation** — DTO-based input validation via `class-validator` and `class-transformer`.
-
-### Architecture
-
-```text
-noxwork-gedcom-api/src/
-├── main.ts                          # Server bootstrap (CORS, global prefix, validation)
-├── app.module.ts                    # Root module
-└── gedcom/                          # Core domain module
-    ├── gedcom.module.ts
-    ├── gedcom.controller.ts         # REST endpoints
-    ├── gedcom.service.ts            # Orchestration layer
-    ├── dto/
-    │   └── upload-gedcom.dto.ts     # File upload validation
-    ├── interfaces/
-    │   ├── individual.interface.ts  # GedcomIndividual type
-    │   ├── family.interface.ts      # GedcomFamily type
-    │   ├── parse-result.interface.ts
-    │   └── relationship.interface.ts # EdgeType, RelationshipType, KinshipPath, etc.
-    ├── parser/
-    │   ├── gedcom-engine.ts         # GEDCOM text → JSON parser
-    │   ├── relations.ts             # BFS-based RelationshipResolver
-    │   └── relations.spec.ts        # Unit tests
-    └── repositories/
-        ├── gedcom.repository.ts            # Abstract repository interface
-        └── in-memory-gedcom.repository.ts  # In-memory implementation
-```
 
 ### API Endpoints
 
 All routes are prefixed with `/api`.
 
+#### Public
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| `GET`  | `/api`   | Health check |
 | `POST` | `/api/gedcom/upload` | Upload raw GEDCOM content; returns parsed individuals, families, and stats |
-| `GET` | `/api/gedcom/session/:id` | Retrieve a previously parsed result by session ID |
+| `GET`  | `/api/gedcom/session/:id` | Retrieve a previously parsed result by session ID |
 
-#### Example: Upload a GEDCOM File
+#### Protected (requires `Authorization: Bearer <supabase-jwt>`)
 
-```bash
-curl -X POST http://localhost:3000/api/gedcom/upload \
-  -H "Content-Type: application/json" \
-  -d '{ "fileContent": "0 HEAD\n1 SOUR MyApp\n0 @I1@ INDI\n1 NAME John /Doe/\n0 TRLR" }'
-```
-
-#### Example Response
-
-```json
-{
-  "success": true,
-  "message": "Successfully parsed GEDCOM file with 1 individuals and 0 families",
-  "data": {
-    "sessionId": "abc123",
-    "stats": { "individualsCount": 1, "familiesCount": 0 },
-    "individuals": [ ... ],
-    "families": [],
-    "metadata": { "source": "MyApp" }
-  }
-}
-```
+| Method   | Endpoint                                  | Description |
+|----------|-------------------------------------------|-------------|
+| `GET`    | `/api/projects`                           | List all projects for the authenticated user |
+| `POST`   | `/api/projects`                           | Create a new project |
+| `GET`    | `/api/projects/:id`                       | Get project detail with individuals, families, and positions |
+| `POST`   | `/api/projects/:id/upload`                | Upload GEDCOM to a project (persist to DB) |
+| `GET`    | `/api/projects/:id/export`                | Download project as GEDCOM 5.5.1 file |
+| `PATCH`  | `/api/projects/:id`                       | Rename a project |
+| `DELETE` | `/api/projects/:id`                       | Delete a project (cascades to persons + relationships) |
+| `POST`   | `/api/projects/:id/persons`               | Create a new person in the project |
+| `PATCH`  | `/api/projects/:id/persons/:personId`     | Update person details (partial) |
+| `DELETE` | `/api/projects/:id/persons/:personId`     | Delete person + cascade relationships |
+| `POST`   | `/api/projects/:id/relationships`         | Create a typed relationship (PARENT/SPOUSE) |
+| `PATCH`  | `/api/projects/:id/positions`             | Batch-update canvas node positions |
 
 ### Relationship Types Supported
-
-The `RelationshipResolver` classifies paths through a kinship graph into these types:
 
 | Type | Description |
 |------|-------------|
@@ -105,96 +77,112 @@ The `RelationshipResolver` classifies paths through a kinship graph into these t
 | Great-Uncle/Aunt · Great-Nephew/Niece | Two generations offset, lateral |
 | Cousin | Same generation, shared ancestor |
 
-### Getting Started
+---
 
-#### Prerequisites
+## noxwork-gedcom-web
+
+The frontend dashboard for visualizing and editing GEDCOM family trees as interactive graphs.
+
+### Key Features
+
+- **React Flow Canvas** — Interactive, zoomable graph with background grid, minimap, and controls.
+- **PersonNode** — Custom node with gender-colored border, birth/death dates, location, and multi-role badge for pedigree collapse cases.
+- **Dagre Layout** — Automatic hierarchical positioning (top-to-bottom) with spouse alignment.
+- **Auto Organize** — One-click dagre layout button that rearranges all nodes and saves positions.
+- **Position Persistence** — Drag nodes to arrange them; positions are saved to the database and restored on load.
+- **Edit Person Panel** — Slide-in side panel for editing firstName, lastName, gender, and birth date with inline delete confirmation.
+- **Connection Drawing** — Draw edges between nodes; choose Parent→Child or Spouse relationship type.
+- **Create New Person** — Inline sidebar form to add new individuals to the tree.
+- **GEDCOM Date Picker** — Custom date picker outputting GEDCOM standard format (e.g. `8 DEC 1977`).
+- **Drag & Drop Upload** — Upload `.ged` files directly in the browser.
+- **Dark Theme** — Noxwork-branded cobalt/orange palette with Tailwind CSS v4.
+- **Auth** — Google SSO + Email/Password via Supabase Auth with password recovery flow.
+- **Dashboard** — Overleaf-style project management with search, rename, delete, and export.
+- **i18n** — Full English and Spanish translations.
+
+---
+
+## Getting Started
+
+### Prerequisites
 
 - **Node.js** ≥ 22
 - **npm** ≥ 10
+- **PostgreSQL** (or use Neon.tech serverless)
 
-#### Install & Run
+### Install & Run
 
 ```bash
 # Clone the repo
 git clone git@github.com:varfmx/noxwork-gedcom.git
 cd noxwork-gedcom
 
-# Install API dependencies
+# ── Backend ──
 cd noxwork-gedcom-api
 npm install
+cp .env.example .env    # Configure SUPABASE_URL, SUPABASE_JWT_SECRET, DATABASE_URL
+npx prisma generate     # Generate Prisma client
+npm run start:dev        # http://localhost:3000/api
 
-# Start in development mode (hot reload)
-npm run start:dev
-```
-
-The API will be available at `http://localhost:3000/api`.
-
----
-
-## noxwork-gedcom-web
-
-The frontend dashboard for visualizing GEDCOM family trees as interactive graphs.
-
-### Key Features
-
-- **React Flow Canvas** — Interactive, zoomable graph with background grid, minimap, and controls.
-- **PersonNode** — Custom node with gender-colored borders, birth/death dates, and multi-role badge for pedigree collapse cases.
-- **Dagre Layout** — Automatic hierarchical positioning (top-to-bottom) with spouse alignment.
-- **Drag & Drop Upload** — Upload `.ged` files directly in the browser.
-- **Dark Theme** — Noxwork-branded cobalt/orange palette with Tailwind CSS v4.
-- **Email Auth Flow** — Sign-up, sign-in, forgot password, update password, and resend confirmation email via Supabase Auth.
-- **Google SSO** — One-click Google OAuth login with session management.
-- **Dashboard** — Overleaf-style project management with unconfirmed-user banner.
-
-### Install & Run
-
-```bash
-cd noxwork-gedcom-web
+# ── Frontend ──
+cd ../noxwork-gedcom-web
 npm install
-npm run dev
+cp .env.example .env.local  # Configure VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+npm run dev                  # http://localhost:5173 (proxies /api → :3000)
 ```
-
-The frontend will be available at `http://localhost:5173` and proxies API calls to `:3000`.
-
-#### Available Scripts
-
-| Script | Command | Description |
-|--------|----------|-------------|
-| Dev server | `npm run start:dev` | Start with file watching |
-| Debug mode | `npm run start:debug` | Start with inspector attached |
-| Production | `npm run start:prod` | Run compiled output |
-| Build | `npm run build` | Compile TypeScript |
-| Lint | `npm run lint` | ESLint with auto-fix |
-| Format | `npm run format` | Prettier formatting |
-| Unit tests | `npm test` | Run Jest test suite |
-| Test coverage | `npm run test:cov` | Generate coverage report |
-| E2E tests | `npm run test:e2e` | Integration tests |
 
 ### Environment Variables
+
+#### Backend (`noxwork-gedcom-api/.env`)
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | `3000` | Server port |
-| `CORS_ORIGIN` | `http://localhost:5173` | Allowed CORS origin (frontend URL) |
+| `CORS_ORIGIN` | `http://localhost:5173` | Allowed CORS origin |
+| `SUPABASE_URL` | — | Supabase project URL |
+| `SUPABASE_JWT_SECRET` | — | Supabase JWT secret (for local dev bypass) |
+| `DATABASE_URL` | — | PostgreSQL connection string |
+
+#### Frontend (`noxwork-gedcom-web/.env.local`)
+
+| Variable | Description |
+|----------|-------------|
+| `VITE_SUPABASE_URL` | Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anonymous/public key |
 
 ---
 
 ## Roadmap
 
-- [x] GEDCOM parser engine (INDI, FAM, HEAD)
+### ✅ Completed
+
+- [x] GEDCOM parser engine (INDI, FAM, HEAD tags)
 - [x] REST API for file upload and session retrieval
-- [x] Graph-based relationship resolver (BFS, multi-path)
+- [x] Graph-based relationship resolver (BFS, multi-path, multi-role)
 - [x] React frontend with React Flow visualization
 - [x] Layout engine (Dagre) for automatic node positioning with spouse alignment
-- [x] Backend deployment (Railway)
-- [x] Frontend deployment (Vercel)
 - [x] Supabase Auth: Google SSO + Email/Password login + registration
 - [x] Password recovery flow (forgot password, update password)
 - [x] Resend confirmation email + unconfirmed-user dashboard banner
 - [x] Toast notification system (success/error/info/warning)
 - [x] PostgreSQL persistence with Prisma ORM (Neon.tech)
-- [ ] PDF/PNG export of family trees
-- [ ] Editor mode — create trees from scratch in the browser
+- [x] GEDCOM 5.5.1 export from database records
+- [x] Dashboard: project list, search, create, rename, delete
+- [x] i18n: English + Spanish translations
+- [x] Manual person CRUD (create, edit, delete) with optimistic updates
+- [x] Relationship drawing (Parent→Child, Spouse) from the canvas
+- [x] Position persistence (drag-save + restore on load)
+- [x] Auto Organize button (dagre re-layout + batch save)
+- [x] GEDCOM date picker (day/month/year → `D MMM YYYY`)
+- [x] Backend deployment (Railway)
+- [x] Frontend deployment (Vercel)
+
+### 🔲 In Progress / Planned
+
+- [ ] Search / filter individuals on the canvas
+- [ ] Highlight kinship paths on hover
+- [ ] Export tree as PNG/PDF
+- [ ] Responsive sidebar (collapsible on mobile)
 - [ ] Custom domain (`gedcom.noxwork.net`)
 
 ---
@@ -210,7 +198,7 @@ The frontend will be available at `http://localhost:5173` and proxies API calls 
 ### Infrastructure Notes
 
 - The API binds to `0.0.0.0` for Railway compatibility.
-- A `vercel.json` rewrite proxies `/api/*` from Vercel to the Railway backend, keeping the same relative-path pattern used in development.
+- A `vercel.json` rewrite proxies `/api/*` from Vercel to the Railway backend.
 - CORS is configured via the `CORS_ORIGIN` environment variable.
 
 ---
@@ -219,10 +207,11 @@ The frontend will be available at `http://localhost:5173` and proxies API calls 
 
 | Layer | Technology |
 |-------|-----------|
-| **Backend** | NestJS 11 · TypeScript 5.7 · Node.js |
+| **Backend** | NestJS 11 · TypeScript 5.7 · Prisma ORM · Node.js |
 | **Frontend** | React 19 · Vite 7 · React Flow v12 · Tailwind CSS v4 · Zustand 5 · Dagre |
 | **Database** | PostgreSQL 16+ · Prisma ORM · Neon.tech |
-| **Hosting** | Railway (backend) · Vercel (frontend) · Neon (DB, planned) |
+| **Auth** | Supabase Auth (Google SSO + Email/Password) |
+| **Hosting** | Railway (backend) · Vercel (frontend) · Neon (DB) |
 
 ---
 

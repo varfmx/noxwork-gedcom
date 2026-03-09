@@ -1,7 +1,7 @@
 # noxwork-gedcom-web — Project Context
 
-> **Last updated:** 2026-02-28
-> **Status:** Phase 6 — Persistence Layer (Upload + Hydration) ✅
+> **Last updated:** 2026-03-08
+> **Status:** Phase 7 — Manual Editing, Position Persistence & GEDCOM Date Picker ✅
 > **Runtime:** React 19 + Vite 7 + TypeScript 5.9 (strict mode)
 > **Target:** ES2022, bundler module resolution
 
@@ -18,7 +18,8 @@ The frontend is responsible for:
 - Visualizing parsed family trees as an interactive graph using React Flow
 - Displaying enriched individual data including multi-role kinship overlaps
 - Automatic hierarchical layout via Dagre with spouse alignment
-- **Editor Mode:** Adding, deleting, and moving nodes with real-time debounced sync to the backend
+- **Editor Mode:** Creating, editing, and deleting person nodes; drawing relationship edges; GEDCOM-format date picker
+- **Position Persistence:** Saving & restoring canvas node positions; "Auto Organize" layout button
 - (Future) Exporting tree visualizations as PDF/PNG
 
 The **backend** (NestJS 11 at `localhost:3000`) parses GEDCOM files, resolves kinship relationships, and persists data via Prisma/PostgreSQL.
@@ -39,6 +40,7 @@ The **backend** (NestJS 11 at `localhost:3000`) parses GEDCOM files, resolves ki
 | Layout         | Dagre (`@dagrejs/dagre`)       | Hierarchical TB positioning + spouse alignment  |
 | Styling        | Tailwind CSS v4                | CSS-first config via `@tailwindcss/vite`        |
 | Dates          | date-fns v4                    | `formatDistanceToNow` in ProjectTable           |
+| i18n           | react-i18next                  | EN + ES translations                            |
 | Sync           | lodash.debounce                | Debounced API calls for node positioning        |
 | Linting        | ESLint 9 + react-hooks plugin  |                                                 |
 
@@ -62,11 +64,16 @@ noxwork-gedcom-web/
 │   ├── store/                                      # ══ State Management ══
 │   │   ├── useAuthStore.ts                         # Auth state: Google SSO, email sign-in/up, reset, resend, updatePassword
 │   │   ├── useProjectStore.ts                      # Projects CRUD with optimistic updates
-│   │   └── useTreeStore.ts                         # Zustand store (upload, parse, layout, editor)
+│   │   └── useTreeStore.ts                         # Zustand store (upload, parse, layout, editor, position sync)
 │   │
 │   ├── components/                                 # ══ Shared Components ══
 │   │   ├── ProtectedRoute.tsx                      # Auth guard: spinner → Outlet or Navigate /login
-│   │   └── Toast.tsx                               # Toast notification system (context + provider + hook)
+│   │   ├── Toast.tsx                               # Toast notification system (context + provider + hook)
+│   │   └── GedcomDatePicker.tsx                    # GEDCOM-format date picker (D MMM YYYY)
+│   │
+│   ├── locales/                                    # ══ i18n ══
+│   │   ├── en/translation.json                     # English translations
+│   │   └── es/translation.json                     # Spanish translations
 │   │
 │   ├── pages/                                      # ══ Route Pages ══
 │   │   ├── LoginPage.tsx                           # Email/Password + Google SSO login; Sign-up toggle; Resend confirmation
@@ -74,13 +81,15 @@ noxwork-gedcom-web/
 │   │   ├── ForgotPassword.tsx                      # Send password-reset email via Supabase
 │   │   ├── UpdatePassword.tsx                      # Set new password after recovery; live strength meter + validation
 │   │   ├── Dashboard.tsx                           # Project list + create modal + search; unconfirmed-user banner
-│   │   └── VisualizerPage.tsx                      # Tree editor (extracted from App.tsx) + back button
+│   │   └── VisualizerPage.tsx                      # Tree editor: sidebar (stats, create person, auto-organize, legend) + canvas
 │   │
 │   └── features/                                   # ══ Feature Modules ══
-│       ├── visualizer/                             # Tree visualization
-│       │   ├── TreeCanvas.tsx                      # React Flow canvas (background, controls, minimap)
+│       ├── visualizer/                             # Tree visualization & editing
+│       │   ├── TreeCanvas.tsx                      # React Flow canvas (node selection, edge creation, pane click)
+│       │   ├── EditPersonPanel.tsx                 # Slide-in panel: edit firstName/lastName/gender/birthDate, delete
+│       │   ├── ConnectionTypeModal.tsx             # Modal for choosing Parent→Child or Spouse relationship type
 │       │   └── nodes/
-│       │       └── PersonNode.tsx                  # Custom node (gender border, multi-role badge)
+│       │       └── PersonNode.tsx                  # Custom node (gender border, multi-role badge, side handles)
 │       │
 │       ├── uploader/                               # File import
 │       │   └── FileUploader.tsx                    # Drag-and-drop .ged upload
@@ -110,8 +119,9 @@ Components are organized by **feature area**, not by type:
 
 ```
 features/
-  visualizer/  → TreeCanvas + PersonNode (graph rendering)
+  visualizer/  → TreeCanvas + EditPersonPanel + ConnectionTypeModal + PersonNode
   uploader/    → FileUploader (file import)
+  dashboard/   → ProjectTable + EmptyState
 ```
 
 ### 4.2 State Management (Zustand)
@@ -119,35 +129,42 @@ features/
 Single store `useTreeStore` manages the entire tree lifecycle:
 
 ```
-uploadAndParse(fileContent)           → fetch /api/gedcom/upload        → map to nodes/edges → set state
-uploadToProject(projectId, content)   → fetch /api/projects/:id/upload  → map to nodes/edges → set state
-loadProject(projectId)                → fetch /api/projects/:id         → map to nodes/edges → set state (hydration)
+uploadAndParse(fileContent)           → fetch /api/gedcom/upload             → map to nodes/edges → set state
+uploadToProject(projectId, content)   → fetch /api/projects/:id/upload       → map to nodes/edges → set state
+loadProject(projectId)                → fetch /api/projects/:id              → map to nodes/edges → set state (hydration)
+createPerson(data)                    → POST /api/projects/:id/persons       → add node to canvas
+updatePerson(personId, data)          → PATCH /api/projects/:id/persons/:pid → optimistic update
+deletePerson(personId)                → DELETE /api/projects/:id/persons/:pid → optimistic remove
+createRelationship(data)              → POST /api/projects/:id/relationships → add edge to canvas
+applyLayout()                         → dagre layout → debounced PATCH /projects/:id/positions
 ```
 
-- **Hydration:** `loadProject()` fetches persisted data from `GET /api/projects/:id` and reconstructs the React Flow canvas, reusing the same `mapIndividualsToNodes` / `mapFamiliesToEdges` mapping functions. An `isHydrating` flag controls the loading spinner.
-- **Project-aware upload:** When `activeProjectId` is set, `FileUploader` routes through `uploadToProject()` instead of `uploadAndParse()`, persisting directly to the database.
+- **Hydration:** `loadProject()` fetches persisted data from `GET /api/projects/:id` and reconstructs the React Flow canvas. If saved positions exist in the response (`positionX`/`positionY`), they are restored; otherwise `applyLayout()` runs dagre.
+- **Position persistence:** Node position changes (drag, auto-layout) are debounced and batch-saved via `PATCH /api/projects/:id/positions` with auth headers.
+- **Optimistic CRUD:** `updatePerson`, `deletePerson`, and `createRelationship` apply changes immediately in the UI; on API failure, they roll back and show error toasts.
 - **Nodes:** Each `GedcomIndividual` → React Flow `Node<PersonNodeData>` of type `'person'`
 - **Edges:** Built from `GedcomFamily` records:
   - `husbandId ↔ wifeId` = Spouse edge (straight, dashed, orange `#FF8C00`)
   - `parentId → childId` = Parent-child edge (smoothstep, solid, cobalt `#0047AB`)
-- **Layout:** `applyLayout()` uses Dagre for hierarchical TB positioning.
-- **Sync Logic:** Optimistic UI updates for adding/removing nodes and edges. Node position changes are debounced (2s) and synced via `PATCH /api/gedcom/node/:id`. Failed API calls trigger state rollbacks and error toasts.
-  Spouse edges are excluded from the Dagre graph to preserve generational tiers;
-  a post-processing step aligns each spouse node to the right of their partner at the same Y level.
 
 ### 4.3 Custom Node System (React Flow)
 
 React Flow's `nodeTypes` registry maps `'person'` → `PersonNode` component:
 - **Gender border:** Left-accent colored by sex (blue M, orange F, gray U)
 - **Multi-role badge:** Amber `⚠ N` badge when `detectedRoles.length > 1`
-- **Role tags:** Up to 3 role type pills shown, "+N more" for overflow
-- **Handles:** Top (target, cobalt) and bottom (source, orange)
+- **Handles:** Top (target, cobalt), Bottom (source, orange), Left/Right (spouse, orange)
 
-### 4.4 API Proxy
+### 4.4 Editor Components
+
+- **EditPersonPanel:** Slide-in side panel (320px) for editing person details. Cobalt header, orange save button. Includes inline delete confirmation dialog.
+- **ConnectionTypeModal:** Appears when an edge is drawn between two nodes. User chooses Parent→Child or Spouse.
+- **GedcomDatePicker:** Custom date picker outputting GEDCOM format (`D MMM YYYY`). Features a 4×3 month grid, day/year number inputs, and live preview.
+
+### 4.5 API Proxy
 
 Vite dev server proxies `/api/*` to `http://localhost:3000` to avoid CORS issues during development. In production, configure the reverse proxy at the deployment layer.
 
-### 4.5 Tailwind v4 (CSS-First Configuration)
+### 4.6 Tailwind v4 (CSS-First Configuration)
 
 No `tailwind.config.js` file. Design tokens are defined in `index.css` using `@theme`:
 
@@ -164,14 +181,14 @@ These generate Tailwind utility classes like `bg-nox-cobalt`, `text-nox-orange`,
 
 ---
 
-## 4.6 Routing (react-router-dom)
+## 5. Routing (react-router-dom)
 
 All routes are declared in `App.tsx` using `<Routes>`:
 
 | Path                 | Component          | Guard          | Description                                          |
 |----------------------|--------------------|----------------|------------------------------------------------------|
 | `/login`             | `LoginPage`        | —              | Email/Password + Google SSO; Sign-up + Resend        |
-| `/auth/callback`     | `AuthCallback`     | —              | OAuth/email confirmation → /dashboard; recovery → /update-password |
+| `/auth/callback`     | `AuthCallback`     | —              | OAuth/email confirmation → /dashboard                |
 | `/forgot-password`   | `ForgotPassword`   | —              | Request password reset email                         |
 | `/update-password`   | `UpdatePassword`   | —              | Set new password (requires PASSWORD_RECOVERY session) |
 | `/dashboard`         | `Dashboard`        | ProtectedRoute | Project list; unconfirmed-user warning banner        |
@@ -179,73 +196,18 @@ All routes are declared in `App.tsx` using `<Routes>`:
 | `/visualizer/:id`    | `VisualizerPage`   | ProtectedRoute | Tree editor for a specific project                   |
 | `*`                  | —                  | —              | Redirects to `/dashboard`                            |
 
-### Auth Flow
-
-**Google SSO:**
-```
-Browser → /login → signInWithGoogle() → Supabase Google OAuth → /auth/callback
-  AuthCallback: onAuthStateChange(SIGNED_IN) → setSession() → navigate('/dashboard')
-```
-
-**Email/Password sign-in:**
-```
-/login → signInWithEmail(email, password) → Supabase → session set via onAuthStateChange
-```
-
-**Email registration:**
-```
-/login (Register tab) → signUpWithEmail(email, password) → Supabase sends confirmation email
-  → user clicks link → /auth/callback → navigate('/dashboard')
-  → Dashboard shows "Awaiting Confirmation" banner if email_confirmed_at === null
-```
-
-**Password recovery:**
-```
-/forgot-password → resetPasswordForEmail(email) → Supabase sends reset email
-  → user clicks link → /update-password (hash fragment)
-  → UpdatePassword: onAuthStateChange(PASSWORD_RECOVERY) → setSessionReady
-  → updateUser({ password }) → navigate('/dashboard')
-```
-
-**Resend confirmation:**
-```
-/login or /dashboard banner → resendConfirmation(email) → supabase.auth.resend()
-```
-
-**Session initialization:**
-```
-  App.tsx useEffect: initialize() → onAuthStateChange subscription
-  ProtectedRoute: isLoading? spinner : user? <Outlet> : <Navigate to="/login">
-```
-
-### Session Token → API Calls
-
-```
-useProjectStore.authHeaders()
-  → getAccessToken()  (src/lib/supabase.ts)
-  → supabase.auth.getSession()
-  → session.access_token
-  → { Authorization: 'Bearer <jwt>' }
-  → fetch('/api/projects', { headers })
-```
-
 ---
 
-## 5. Environment Variables
+## 6. Environment Variables
 
 | Variable               | Required | Description                                |
-|------------------------|----------|--------------------------------------------|
+|------------------------|----------|---------------------------------------------|
 | `VITE_SUPABASE_URL`    | ✅ Yes   | Supabase project URL                       |
 | `VITE_SUPABASE_ANON_KEY` | ✅ Yes | Supabase anonymous/public key              |
 
-Both must be set in `.env.local` for development. See `.env.example` for reference.
-Register `{origin}/auth/callback` in:
-1. Supabase Dashboard → Authentication → URL Configuration → Redirect URLs
-2. Google Cloud Console → OAuth 2.0 → Authorized redirect URIs
-
 ---
 
-## 6. Design Tokens (Noxwork Palette)
+## 7. Design Tokens (Noxwork Palette)
 
 | Token                | Value       | Usage                          |
 |----------------------|-------------|--------------------------------|
@@ -254,6 +216,7 @@ Register `{origin}/auth/callback` in:
 | `nox-cobalt-dark`    | `#003080`   | Deep accents                   |
 | `nox-orange`         | `#FF8C00`   | Secondary brand, spouse edges  |
 | `nox-orange-light`   | `#ffaa40`   | Hover states                   |
+| `nox-orange-dark`    | `#e07800`   | Pressed states                 |
 | `nox-surface`        | `#0f172a`   | Main background (slate-900)    |
 | `nox-surface-light`  | `#1e293b`   | Card/node backgrounds          |
 | `nox-surface-lighter`| `#334155`   | Borders, separators            |
@@ -264,45 +227,6 @@ Register `{origin}/auth/callback` in:
 | `nox-unknown`        | `#6b7280`   | Unknown gender indicator       |
 | `nox-warning`        | `#f59e0b`   | Multi-role badge               |
 | `nox-danger`         | `#ef4444`   | Errors, destructive actions    |
-
----
-
-## 7. Data Flow
-
-### Upload → Visualization Pipeline
-
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant FU as FileUploader
-    participant S as useTreeStore
-    participant API as NestJS /api
-    participant TC as TreeCanvas
-
-    U->>FU: Drop .ged file
-    FU->>S: uploadAndParse(fileContent)
-    S->>API: POST /api/gedcom/upload
-    API-->>S: { individuals[], families[], sessionId }
-    S->>S: mapIndividualsToNodes()
-    S->>S: mapFamiliesToEdges()
-    S->>S: applyLayout()
-    S-->>TC: nodes + edges updated
-    TC->>TC: ReactFlow renders graph
-```
-
-### PersonNodeData Shape
-
-| Field           | Type                  | Source                            |
-|-----------------|-----------------------|-----------------------------------|
-| `fullName`      | `string`              | `individual.fullName`             |
-| `givenName`     | `string`              | `individual.givenName`            |
-| `surname`       | `string`              | `individual.surname`              |
-| `sex`           | `'M' \| 'F' \| 'U'`  | `individual.sex`                  |
-| `birthDate`     | `string \| null`      | `individual.birthDate`            |
-| `deathDate`     | `string \| null`      | `individual.deathDate`            |
-| `birthPlace`    | `string \| null`      | `individual.birthPlace`           |
-| `detectedRoles` | `ApiDetectedRole[]`   | `individual.detectedRoles ?? []`  |
-| `gedcomId`      | `string`              | `individual.id` (e.g. `@I1@`)    |
 
 ---
 
@@ -317,18 +241,7 @@ sequenceDiagram
 
 ---
 
-## 9. TypeScript Configuration
-
-Uses Vite's **project references** pattern:
-- `tsconfig.json` → root, references `app` and `node` configs
-- `tsconfig.app.json` → strict, `ES2022`, `react-jsx`, `bundler` resolution, `verbatimModuleSyntax`
-- `tsconfig.node.json` → for `vite.config.ts` only
-
-Key flags: `strict: true`, `noUnusedLocals`, `noUnusedParameters`, `erasableSyntaxOnly`
-
----
-
-## 10. Roadmap
+## 9. Roadmap
 
 ### ✅ Phase 1 — Canvas Setup & Custom Node
 - [x] Vite + React 19 + TypeScript scaffolded
@@ -342,64 +255,54 @@ Key flags: `strict: true`, `noUnusedLocals`, `noUnusedParameters`, `erasableSynt
 - [x] Dagre integration for hierarchical top-to-bottom positioning
 - [x] Spouse alignment post-processing (same Y, adjacent X)
 - [x] Generational rank assignment via parent-child edge graph
-- [ ] Anti-overlap for consanguinity edges
 
 ### ✅ Phase 3 — Editor Mode & Backend Sync
 - [x] Add / delete individual nodes (with API sync)
-- [x] Debounced position sync via `PATCH /api/gedcom/node/:id`
+- [x] Debounced position sync via `PATCH /projects/:id/positions`
 - [x] Optimistic updates with rollback on API failure
 
 ### ✅ Phase 4 — Dashboard & Auth
-- [x] Supabase Google SSO (`signInWithGoogle`, `onAuthStateChange`)
+- [x] Supabase Google SSO + Email/Password login + registration
 - [x] React Router DOM routes: `/login`, `/auth/callback`, `/dashboard`, `/visualizer/:id`
-- [x] `ProtectedRoute` guard redirecting unauthenticated users to `/login`
-- [x] `Dashboard` page: project list, search, create modal
-- [x] `ProjectTable`: inline rename, action menu, relative timestamps
-- [x] `EmptyState`: zero-state CTA for Create / Upload GEDCOM
+- [x] `ProtectedRoute` guard, `Dashboard` page, `ProjectTable`, `EmptyState`
 - [x] `useProjectStore`: CRUD operations with optimistic updates, JWT auth headers
-- [x] `VisualizerPage` extracted from App.tsx with back-to-dashboard nav
 
 ### ✅ Phase 5 — Email Auth Flow
-- [x] Email/Password sign-in and sign-up via `supabase.auth.signInWithPassword` / `signUp`
-- [x] `ForgotPassword` page: sends reset email via `resetPasswordForEmail`
-- [x] `UpdatePassword` page: PASSWORD_RECOVERY session detection, live strength meter, show/hide toggle, requirements checklist
-- [x] Password validation: min 8 chars, uppercase, lowercase, number, special character
-- [x] `AuthCallback` updated: handles `PASSWORD_RECOVERY` → `/update-password`, `SIGNED_IN` → `/dashboard`
-- [x] `LoginPage` refactored: Sign In / Register tabs, Google SSO, Forgot Password link
-- [x] "Resend confirmation email" button in LoginPage and Dashboard banner
-- [x] Dashboard "Awaiting Confirmation" banner for users with `email_confirmed_at === null`
-- [x] `Toast` system: Noxwork-branded toast notifications with success/error/info/warning variants
-- [x] `ToastProvider` wraps the app in `main.tsx`
+- [x] Email/Password sign-in and sign-up
+- [x] `ForgotPassword` + `UpdatePassword` pages with live strength meter
+- [x] `Toast` system: Noxwork-branded toast notifications
 
 ### ✅ Phase 6 — Persistence Layer (Upload + Hydration)
-- [x] `useTreeStore.loadProject(projectId)` — Fetches `GET /api/projects/:id` and hydrates React Flow canvas
-- [x] `useTreeStore.uploadToProject(projectId, fileContent, fileName?)` — Uploads GEDCOM to `POST /api/projects/:id/upload` and refreshes canvas
-- [x] `isHydrating` state flag — Controls Noxwork Cobalt Blue loading spinner during project hydration
-- [x] `VisualizerPage` reads `:id` from `useParams` and auto-calls `loadProject()` on mount
-- [x] `FileUploader` routes through `uploadToProject()` when `activeProjectId` is set
-- [x] New types: `ProjectDetailResponse`, `ProjectUploadResponse` in `types/api.ts`
-- [x] i18n: `visualizer.canvas.loadingProject` key added (EN + ES)
+- [x] `useTreeStore.loadProject(projectId)` — hydrates React Flow canvas from DB
+- [x] `useTreeStore.uploadToProject()` — persisted GEDCOM uploads
+- [x] `isHydrating` state flag for loading spinner
 
-### 🔲 Phase 7 — Interactivity
-- [ ] Click node → detail panel / modal
+### ✅ Phase 7 — Manual Editing & Position Persistence
+- [x] **EditPersonPanel** — Slide-in side panel for editing firstName, lastName, gender, birthDate
+- [x] **ConnectionTypeModal** — Choose Parent→Child or Spouse when drawing edges
+- [x] **Create New Person** — Inline form in sidebar with name inputs + gender picker
+- [x] **Delete Person** — Inline confirmation dialog with cascade edge cleanup
+- [x] **GedcomDatePicker** — Custom date picker outputting GEDCOM format (D MMM YYYY)
+- [x] **Position persistence** — Node positions saved to DB, restored on load
+- [x] **Auto Organize button** — Dagre layout + batch save positions
+- [x] **Zustand CRUD actions** — createPerson, updatePerson, deletePerson, createRelationship
+- [x] **i18n** — All editor keys in EN + ES
+
+### 🔲 Phase 8 — Interactivity & Polish
 - [ ] Search / filter individuals
 - [ ] Highlight kinship paths on hover
 - [ ] Zoom to selected individual
-
-### 🔲 Phase 7 — Polish
 - [ ] Responsive sidebar (collapsible on mobile)
 - [ ] Keyboard shortcuts
 - [ ] Export tree as PNG/PDF
-- [ ] Loading skeleton during parse
 
-### 🔲 Phase 8 — Deployment
-- [ ] Vercel deploy configuration
-- [ ] Environment variable management
-- [ ] Production API URL configuration
+### 🔲 Phase 9 — Deployment
+- [x] Vercel deploy configuration
+- [ ] Environment variable management for staging/production
 
 ---
 
-## 11. Key Gotchas & Conventions
+## 10. Key Gotchas & Conventions
 
 1. **Tailwind v4 uses CSS-first config** — design tokens go in `index.css` via `@theme`, NOT in a `tailwind.config.js`
 2. **`verbatimModuleSyntax` is enabled** — use `import type { ... }` for type-only imports
@@ -407,19 +310,16 @@ Key flags: `strict: true`, `noUnusedLocals`, `noUnusedParameters`, `erasableSynt
 4. **React Flow `colorMode="dark"`** — enables built-in dark theme for controls/background
 5. **Vite proxy** handles `/api` routing in dev — no hardcoded `localhost:3000` URLs in components
 6. **Zustand v5** — no more `create<T>()(...)` double-call pattern; just `create<T>(...)` directly
-7. **`proOptions={{ hideAttribution: true }}`** — removes React Flow watermark
-8. **Node type key `'person'`** — registered in `TreeCanvas.tsx`, used in `useTreeStore.ts` when mapping
-9. **Spouse edges use `data.isSpouse`** — this flag controls Dagre exclusion and post-process alignment
-10. **PersonNodeData needs `[key: string]: unknown`** — React Flow v12 requires node data to satisfy `Record<string, unknown>`
-11. **`useAuthStore.initialize()`** must be called once in `App.tsx` via `useEffect` to rehydrate the Supabase session on page load and subscribe to `onAuthStateChange`
-12. **Supabase env vars** — `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are required; `src/lib/supabase.ts` throws at import time if either is missing
-13. **Auth redirect URIs** — Register both `{origin}/auth/callback` AND `{origin}/update-password` in Supabase Dashboard → Authentication → URL Configuration → Redirect URLs
-14. **API auth headers** — `useProjectStore` calls `getAccessToken()` from `src/lib/supabase.ts` and adds `Authorization: Bearer {token}` to every request; expired sessions silently return `null` and requests return 401
-15. **`OnNodesChange` generic default** — Avoid using `OnNodesChange` (defaults to `OnNodesChange<Node>`) for node-type-specific stores; use the explicit `(changes: NodeChange<Node<PersonNodeData>>[]) => void` signature instead
-16. **Toast system** — `useToast()` hook from `src/components/Toast.tsx`; `ToastProvider` must wrap the app (done in `main.tsx`); toasts auto-dismiss after 4 seconds; success toasts use `nox-orange`
-17. **Password recovery flow** — The `UpdatePassword` page listens for `onAuthStateChange(PASSWORD_RECOVERY)` which fires when Supabase exchanges the recovery hash fragment; the form is locked until this event fires
-18. **Unconfirmed users** — Check `user.email_confirmed_at === null` (not falsy, as Google SSO users auto-confirm); unconfirmed users are allowed to reach the dashboard but see a warning banner with a resend button
-19. **`supabase.auth.resend()`** — Used for signup confirmation resend; pass `{ type: 'signup', email }` matching the Supabase SDK v2 API
-20. **Project hydration** — `VisualizerPage` reads `useParams<{ id }>()` and calls `loadProject()` in a `useEffect`; the `isHydrating` flag prevents the empty-state from flashing before data arrives
-21. **Upload routing** — `FileUploader` checks `activeProjectId` from `useProjectStore`; if set, GEDCOM uploads go through `uploadToProject()` (persisted to DB) instead of `uploadAndParse()` (in-memory session only)
-22. **`loadProject` auth headers** — `useTreeStore` imports `getAccessToken()` and attaches `Authorization: Bearer` just like `useProjectStore`, since `GET /projects/:id` is a protected endpoint
+7. **Node type key `'person'`** — registered in `TreeCanvas.tsx`, used in `useTreeStore.ts` when mapping
+8. **Spouse edges use `data.isSpouse`** — controls Dagre exclusion and post-process alignment
+9. **PersonNodeData needs `[key: string]: unknown`** — React Flow v12 requires node data to satisfy `Record<string, unknown>`
+10. **`useAuthStore.initialize()`** must be called once in `App.tsx` via `useEffect`
+11. **Supabase env vars** — `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are required
+12. **Auth redirect URIs** — Register `{origin}/auth/callback` AND `{origin}/update-password` in Supabase Dashboard
+13. **API auth headers** — `getAccessToken()` from `src/lib/supabase.ts` adds `Authorization: Bearer {token}` to every request
+14. **Toast system** — `useToast()` hook from `src/components/Toast.tsx`; `ToastProvider` must wrap the app
+15. **Password recovery flow** — `UpdatePassword` listens for `onAuthStateChange(PASSWORD_RECOVERY)`
+16. **Dual ID system** — GEDCOM-imported nodes use `gedcomId` (e.g. `@I5@`) as their React Flow node ID; manually created nodes use their database UUID
+17. **Position persistence** — `flushPositionUpdates` debounces 1s then batch-saves via `PATCH /projects/:id/positions` with auth headers
+18. **Conditional layout** — `loadProject()` skips `applyLayout()` when saved positions exist in the API response
+19. **GedcomDatePicker** — Outputs dates in GEDCOM standard format `D MMM YYYY` (e.g. `8 DEC 1977`); supports partial dates (year-only, month+year)

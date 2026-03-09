@@ -1,7 +1,7 @@
 # noxwork-gedcom-api — Project Context
 
-> **Last updated:** 2026-02-28
-> **Status:** Phase 6 — Persistence Layer (Upload + Hydration) ✅
+> **Last updated:** 2026-03-08
+> **Status:** Phase 7 — Manual Editing & Position Persistence ✅
 > **Runtime:** NestJS 11 + TypeScript 5.7 (strict mode)
 > **Node target:** ES2023
 
@@ -9,7 +9,7 @@
 
 ## 1. Project Overview
 
-`noxwork-gedcom-api` is the **backend** of the Noxwork GEDCOM Labs platform. It is part of a **monorepo** located at `noxwork-gedcom/` alongside the future frontend (`noxwork-gedcom-web`).
+`noxwork-gedcom-api` is the **backend** of the Noxwork GEDCOM Labs platform. It is part of a **monorepo** located at `noxwork-gedcom/` alongside the frontend (`noxwork-gedcom-web`).
 
 The API is responsible for:
 - Receiving and parsing `.ged` (GEDCOM) genealogy files
@@ -17,8 +17,10 @@ The API is responsible for:
 - Persisting parsed results and tree structures via Prisma ORM to PostgreSQL
 - Computing complex family relationships with multi-role overlap detection (uncle/cousin/pedigree collapse)
 - Handling real-time editor sync (adding, updating, deleting nodes and relationships)
+- Batch-saving canvas node positions for UI state persistence
+- Exporting GEDCOM 5.5.1 files from persisted database records
 
-The **frontend** (React 19 + Vite + React Flow) will consume this API to render interactive family tree visualizations.
+The **frontend** (React 19 + Vite + React Flow) consumes this API to render interactive family tree visualizations.
 
 ---
 
@@ -60,14 +62,18 @@ noxwork-gedcom-api/
 │   │
 │   ├── project/                                 # ══ Project (Tree CRUD + Persistence) Module ══
 │   │   ├── project.module.ts                    # Imports AuthModule, provides ProjectService
-│   │   ├── project.controller.ts                # REST: GET/POST/PATCH/DELETE /api/projects + upload + detail
+│   │   ├── project.controller.ts                # REST: GET/POST/PATCH/DELETE /api/projects + person/relationship CRUD + positions
 │   │   ├── project.service.ts                   # Business logic + ownership enforcement + GEDCOM persistence
 │   │   ├── gedcom-exporter.service.ts           # GEDCOM 5.5.1 export from DB records
 │   │   └── dto/
 │   │       ├── index.ts                         # Barrel export
 │   │       ├── create-project.dto.ts            # CreateProjectDto (name, description?)
 │   │       ├── rename-project.dto.ts            # RenameProjectDto (name)
-│   │       └── upload-to-project.dto.ts         # UploadToProjectDto (fileContent, fileName?)
+│   │       ├── upload-to-project.dto.ts         # UploadToProjectDto (fileContent, fileName?)
+│   │       ├── create-person.dto.ts             # CreatePersonDto (firstName, lastName?, gender?, birthDate?)
+│   │       ├── update-person.dto.ts             # UpdatePersonDto (all optional fields)
+│   │       ├── create-relationship.dto.ts       # CreateRelationshipDto (type, sourceId, targetId)
+│   │       └── batch-update-positions.dto.ts    # BatchUpdatePositionsDto (updates[{id, positionX, positionY}])
 │   │
 │   └── gedcom/                                  # ══ GEDCOM Domain Module ══
 │       ├── gedcom.module.ts                     # NestJS module with DI wiring
@@ -160,7 +166,11 @@ buildAdjacencyGraph() → findAllPaths() (BFS) → classifyAllPaths() → buildE
 - **Multi-role detection:** Deduplicates by `type:degree` key, preserving distinct role types for the same target
 - **Supported classifications:** Parent, Child, Sibling, Half-Sibling, Spouse, Grandparent, Grandchild, Uncle/Aunt, Nephew/Niece, Cousin, Great-Grandparent, Great-Grandchild, Great-Uncle/Aunt, Great-Nephew/Niece
 
-### 4.5 TypeScript Strict Mode Conventions
+### 4.5 Dual ID Resolution (gedcomId + UUID)
+
+GEDCOM-imported nodes use their original GEDCOM ID (e.g. `@I5@`) as the frontend React Flow node ID, while manually created nodes use their database UUID. All CRUD endpoints (`updatePerson`, `deletePerson`, `createRelationship`, `batchUpdatePositions`) resolve identifiers by checking **both** the `id` and `gedcomId` columns via Prisma `OR` queries.
+
+### 4.6 TypeScript Strict Mode Conventions
 
 Because `isolatedModules` and `emitDecoratorMetadata` are both enabled:
 - **Interfaces must be re-exported with `export type`** (not `export`)
@@ -183,91 +193,42 @@ All routes are prefixed with `/api` (set in `main.ts`).
 
 ### Protected (requires `Authorization: Bearer <supabase-jwt>`)
 
-| Method   | Route                        | Body / Params                                | Response                                                              |
-|----------|------------------------------|----------------------------------------------|-----------------------------------------------------------------------|
-| `GET`    | `/api/projects`              | —                                            | `{ success, data: ProjectSummary[] }`                                 |
-| `POST`   | `/api/projects`              | `{ name, description? }`                    | `{ success, message, data: ProjectSummary }`                          |
-| `GET`    | `/api/projects/:id`          | —                                            | `{ success, data: ProjectDetail }`                                    |
-| `POST`   | `/api/projects/:id/upload`   | `{ fileContent: string, fileName?: string }` | `{ success, message, data: ProjectDetail }`                           |
-| `GET`    | `/api/projects/:id/export`   | —                                            | GEDCOM 5.5.1 file download                                           |
-| `PATCH`  | `/api/projects/:id`          | `{ name }`                                   | `{ success, message, data: ProjectSummary }`                          |
-| `DELETE` | `/api/projects/:id`          | —                                            | `204 No Content`                                                      |
-
-#### ProjectSummary shape
-
-```ts
-{
-  id:          string;   // Tree UUID
-  name:        string;
-  description: string | null;
-  nodeCount:   number;   // Person records in this tree
-  edgeCount:   number;   // Relationship records in this tree
-  createdAt:   Date;
-  updatedAt:   Date;
-}
-```
+| Method   | Route                                    | Body / Params                                | Response                            |
+|----------|------------------------------------------|----------------------------------------------|-------------------------------------|
+| `GET`    | `/api/projects`                          | —                                            | `{ success, data: ProjectSummary[] }` |
+| `POST`   | `/api/projects`                          | `{ name, description? }`                    | `{ success, message, data: ProjectSummary }` |
+| `GET`    | `/api/projects/:id`                      | —                                            | `{ success, data: ProjectDetail }`  |
+| `POST`   | `/api/projects/:id/upload`               | `{ fileContent, fileName? }`                | `{ success, message, data: ProjectDetail }` |
+| `GET`    | `/api/projects/:id/export`               | —                                            | GEDCOM 5.5.1 file download          |
+| `PATCH`  | `/api/projects/:id`                      | `{ name }`                                   | `{ success, message, data: ProjectSummary }` |
+| `DELETE` | `/api/projects/:id`                      | —                                            | `204 No Content`                    |
+| `POST`   | `/api/projects/:id/persons`              | `{ firstName, lastName?, gender?, birthDate? }` | `{ success, data: ProjectDetail }` |
+| `PATCH`  | `/api/projects/:id/persons/:personId`    | `{ firstName?, lastName?, gender?, birthDate? }` | `{ success, data: Person }`       |
+| `DELETE` | `/api/projects/:id/persons/:personId`    | —                                            | `204 No Content`                    |
+| `POST`   | `/api/projects/:id/relationships`        | `{ type, sourceId, targetId, subType? }`     | `{ success, data: Relationship }`   |
+| `PATCH`  | `/api/projects/:id/positions`            | `{ updates: [{id, positionX, positionY}] }` | `204 No Content`                    |
 
 #### ProjectDetail shape (extends ProjectSummary)
 
 ```ts
 {
   ...ProjectSummary,
-  individuals: GedcomIndividual[];  // Reconstructed from Person rows
-  families:    GedcomFamily[];      // Reconstructed from Relationship rows (SPOUSE + PARENT → FAM)
+  individuals: GedcomIndividual[];  // Now includes positionX, positionY
+  families:    GedcomFamily[];
 }
 ```
 
 The `GET /projects/:id` and `POST /projects/:id/upload` endpoints return `ProjectDetail`,
 which includes the same `individuals[]` and `families[]` shapes that the frontend receives
-from `POST /gedcom/upload`. This allows the frontend to reuse its existing mapping logic
-(`mapIndividualsToNodes`, `mapFamiliesToEdges`) for both upload and hydration.
+from `POST /gedcom/upload`. Individual records now include `positionX` and `positionY`
+(stored in metadata JSON) so the frontend can restore canvas positions on load.
 
 ### Security model
 - All `/api/projects` routes are guarded by `JwtAuthGuard` (Supabase ES256/RS256 JWT validation via JWKS).
 - `JwtAuthGuard` overrides `handleRequest` to log `[401]` events with method + URL + failure reason.
-- **Post-password-reset sessions are validated correctly**: after a reset, Supabase issues a fresh JWT. The JWKS-based signature verification and `exp` claim check reject any old/expired tokens automatically.
-- The `JwtPayload` interface includes `aal` (Authentication Assurance Level) and `amr` (Authentication Methods References) claims so callers can inspect how the session was established.
 - Ownership is enforced at the **Prisma query level**: every read/write scopes `where` to include the caller's `userId`.
 - Existence leak prevention: attempting to access someone else's project returns **404**, not 403.
 - `DELETE` cascades to `Person` and `Relationship` records via Prisma schema `onDelete: Cascade`.
-
-### Request / Response Examples
-
-**POST /api/gedcom/upload**
-```json
-// Request
-{
-  "fileContent": "0 HEAD\n1 SOUR MyApp\n0 @I1@ INDI\n1 NAME John /Doe/\n1 SEX M\n0 TRLR",
-  "fileName": "family.ged"
-}
-
-// Response
-{
-  "success": true,
-  "message": "Successfully parsed GEDCOM file with 1 individuals and 0 families",
-  "data": {
-    "sessionId": "uuid-here",
-    "stats": { "individualsCount": 1, "familiesCount": 0 },
-    "individuals": [
-      {
-        "id": "@I1@",
-        "givenName": "John",
-        "surname": "Doe",
-        "fullName": "John Doe",
-        "sex": "M",
-        "birthDate": null,
-        "birthPlace": null,
-        "deathDate": null,
-        "deathPlace": null,
-        "familySpouseIds": [],
-        "familyChildId": null
-      }
-    ],
-    "families": [],
-    "metadata": { "source": "MyApp", "gedcomVersion": null, "charset": null }
-  }
-}
-```
 
 ---
 
@@ -276,52 +237,25 @@ from `POST /gedcom/upload`. This allows the frontend to reuse its existing mappi
 ### GedcomIndividual
 | Field             | Type                    | Description                                      |
 |-------------------|-------------------------|--------------------------------------------------|
-| `id`              | `string`                | GEDCOM xref ID, e.g. `@I1@`                      |
+| `id`              | `string`                | GEDCOM xref ID (e.g. `@I1@`) or DB UUID          |
 | `givenName`       | `string`                | First/given name                                  |
 | `surname`         | `string`                | Family/surname                                    |
 | `fullName`        | `string`                | Full name without GEDCOM slash formatting          |
 | `sex`             | `'M' \| 'F' \| 'U'`    | Biological sex                                    |
-| `birthDate`       | `string \| null`        | Raw GEDCOM date string (e.g. `"15 MAR 1950"`)     |
+| `birthDate`       | `string \| null`        | GEDCOM format date string (e.g. `"15 MAR 1950"`)  |
 | `birthPlace`      | `string \| null`        | Birth place                                       |
 | `deathDate`       | `string \| null`        | Raw GEDCOM date string                            |
 | `deathPlace`      | `string \| null`        | Death place                                       |
 | `familySpouseIds` | `readonly string[]`     | Family IDs where this person is a spouse (FAMS)   |
 | `familyChildId`   | `string \| null`        | Family ID where this person is a child (FAMC)     |
+| `positionX`       | `number \| null`        | Canvas X position (saved in metadata JSON)        |
+| `positionY`       | `number \| null`        | Canvas Y position (saved in metadata JSON)        |
 
-### GedcomFamily
-| Field           | Type                  | Description                                    |
-|-----------------|-----------------------|------------------------------------------------|
-| `id`            | `string`              | GEDCOM xref ID, e.g. `@F1@`                    |
-| `husbandId`     | `string \| null`      | Individual ID of husband/partner 1              |
-| `wifeId`        | `string \| null`      | Individual ID of wife/partner 2                 |
-| `childrenIds`   | `readonly string[]`   | Individual IDs of children                      |
-| `marriageDate`  | `string \| null`      | Raw GEDCOM marriage date                        |
-| `marriagePlace` | `string \| null`      | Marriage place                                  |
-
-### GedcomMetadata
-| Field           | Type             | Description                       |
-|-----------------|------------------|-----------------------------------|
-| `source`        | `string \| null` | GEDCOM source application         |
-| `gedcomVersion` | `string \| null` | GEDCOM standard version (e.g. 5.5.1) |
-| `charset`       | `string \| null` | Character set (e.g. UTF-8)        |
-
-### EnrichedIndividual (extends GedcomIndividual)
-| Field           | Type                        | Description                                       |
-|-----------------|-----------------------------|-------------------------------------------------  |
-| `detectedRoles` | `readonly DetectedRole[]`   | All kinship roles relative to the source individual |
-
-### DetectedRole
-| Field         | Type               | Description                                  |
-|---------------|--------------------|----------------------------------------------|
-| `type`        | `RelationshipType` | Classified relationship label                |
-| `degree`      | `number`           | Degree of separation (hop count)             |
-| `kinshipPath` | `KinshipPath`      | Specific path through the graph              |
-
-### KinshipPath
-| Field   | Type                   | Description                              |
-|---------|------------------------|------------------------------------------|
-| `path`  | `readonly string[]`    | Ordered individual IDs from source to target |
-| `edges` | `readonly EdgeType[]`  | Edge labels on each hop                  |
+### Person Metadata JSON
+Stored in the `metadata` column of the `Person` model. Contains:
+- `birthDate`, `birthPlace`, `deathDate`, `deathPlace` — Raw GEDCOM strings
+- `familySpouseIds`, `familyChildId` — GEDCOM family cross-references
+- `positionX`, `positionY` — Canvas node positions (persisted on drag/layout)
 
 ---
 
@@ -330,15 +264,10 @@ from `POST /gedcom/upload`. This allows the frontend to reuse its existing mappi
 The `GedcomEngine` currently supports GEDCOM 5.5/5.5.1 tags:
 
 | Record | Tags Parsed                                                        |
-|--------|--------------------------------------------------------------------|
+|--------|---------------------------------------------------------------------|
 | `HEAD` | `SOUR`, `GEDC` → `VERS`, `CHAR`                                   |
 | `INDI` | `NAME` (+ `GIVN`, `SURN`), `SEX`, `BIRT` → `DATE`/`PLAC`, `DEAT` → `DATE`/`PLAC`, `FAMS`, `FAMC` |
 | `FAM`  | `HUSB`, `WIFE`, `CHIL`, `MARR` → `DATE`/`PLAC`                    |
-
-### Parser Internals
-- **`parseLine()`** — Regex: `^(\d+)\s+(?:(@[^@]+@)\s+)?(\S+)(?:\s+(.*))?$`
-- **Name extraction** — `"GivenName /Surname/"` format, with fallback for non-standard names
-- **Event context tracking** — Level-1 tags (`BIRT`, `DEAT`, `MARR`) set context for level-2 sub-tags (`DATE`, `PLAC`)
 
 ---
 
@@ -394,37 +323,39 @@ The `GedcomEngine` currently supports GEDCOM 5.5/5.5.1 tags:
 ### ✅ Phase 4 — User Authentication & Project Management
 - [x] `User` model in Prisma schema (id = Supabase `sub` claim)
 - [x] `Tree.userId` FK with `onDelete: Cascade`, `Tree_userId_idx` index
-- [x] Prisma migration: `20260228_add_user_auth_and_project_ownership`
 - [x] `AuthModule`: `SupabaseJwtStrategy` (passport-jwt, ES256/RS256 JWKS)
 - [x] `JwtAuthGuard` (extends `AuthGuard('supabase-jwt')`)
 - [x] `@GetUser()` param decorator to extract `AuthenticatedUser` from request
 - [x] `ProjectController` — `GET/POST/PATCH/DELETE /api/projects`
 - [x] `ProjectService` — ownership-scoped queries, `ensureUser()` upsert on create
-- [x] `saveTree()` updated to require `userId` parameter
 
 ### ✅ Phase 5 — Email Auth Guard Hardening
 - [x] `JwtAuthGuard` overrides `handleRequest` to log `[401]` rejections with request context
-- [x] `JwtPayload` interface updated with `aal` and `amr` claims for post-reset session introspection
-- [x] Security documentation: post-password-reset JWT validation flow documented in guard comments
+- [x] `JwtPayload` interface updated with `aal` and `amr` claims
 
 ### ✅ Phase 6 — Persistence Layer (Upload + Hydration)
-- [x] `POST /api/projects/:id/upload` — Parses GEDCOM and persists all individuals + families into PostgreSQL via Prisma transaction
-- [x] `GET /api/projects/:id` — Retrieves project with reconstructed `GedcomIndividual[]` and `GedcomFamily[]` from Person + Relationship rows
-- [x] `UploadToProjectDto` — Validates `fileContent` and optional `fileName`
-- [x] `ProjectService.uploadToProject()` — Delete-then-insert strategy inside `$transaction` for clean re-uploads
-- [x] `ProjectService.findOneForUser()` — Reconstructs FAM records from SPOUSE + PARENT relationships
-- [x] `ProjectDetail` response shape — Extends `ProjectSummary` with `individuals[]` and `families[]`
-- [x] Upsert-safe: re-uploading a GEDCOM replaces all existing data for the project
-- [x] Person metadata JSON stores `birthDate`, `birthPlace`, `deathDate`, `deathPlace`, `familySpouseIds`, `familyChildId`
+- [x] `POST /api/projects/:id/upload` — GEDCOM upload + Prisma transaction persistence
+- [x] `GET /api/projects/:id` — Reconstructed `individuals[]` and `families[]` from DB
+- [x] `GET /api/projects/:id/export` — GEDCOM 5.5.1 export from DB records
 
-### 🔲 Phase 7 — Export Engine
-- [x] `GedcomExporterService` — Generates valid GEDCOM 5.5.1 files from DB records
+### ✅ Phase 7 — Manual Editing & Position Persistence
+- [x] `POST /api/projects/:id/persons` — Create a person within a project
+- [x] `PATCH /api/projects/:id/persons/:personId` — Update person details (partial)
+- [x] `DELETE /api/projects/:id/persons/:personId` — Delete person + cascade relationships
+- [x] `POST /api/projects/:id/relationships` — Create typed relationship (PARENT/SPOUSE)
+- [x] `PATCH /api/projects/:id/positions` — Batch-update node canvas positions
+- [x] Dual ID resolution: all endpoints resolve identifiers by both `id` and `gedcomId`
+- [x] Position storage in Person metadata JSON (`positionX`, `positionY`)
+- [x] `findOneForUser()` returns positions in API response
+
+### 🔲 Phase 8 — Export Enhancements
+- [x] GEDCOM 5.5.1 export
 - [ ] PDF/PNG export of visualized trees
 
-### 🔲 Phase 8 — Deployment
-- [ ] Backend: Railway.app (Node.js runtime)
-- [ ] Database: Neon.tech (PostgreSQL Serverless)
-- [ ] Frontend: Vercel
+### 🔲 Phase 9 — Deployment
+- [x] Backend: Railway.app (Node.js runtime)
+- [x] Database: Neon.tech (PostgreSQL Serverless)
+- [x] Frontend: Vercel
 - [ ] Domain: `gedcom.noxwork.net`
 
 ---
@@ -449,12 +380,12 @@ The `GedcomEngine` currently supports GEDCOM 5.5/5.5.1 tags:
 6. **GEDCOM line format:** `LEVEL [XREF_ID] TAG [VALUE]` — for level-0 records with xref, the record type (INDI/FAM) appears as the **tag**, not the value
 7. **Responses follow a consistent envelope:** `{ success: boolean, message?: string, data: T | null }`
 8. **`RelationshipResolver` uses per-path visited sets** — NOT a global visited set. This is critical for multi-role detection
-9. **Jest 30 uses `--testPathPatterns`** (plural), not `--testPathPattern` (singular)
-10. **`SUPABASE_URL` must be set** — strategy throws at bootstrap if missing; used to construct the JWKS URI `{SUPABASE_URL}/auth/v1/.well-known/jwks.json`
-11. **`User.id` is the Supabase `sub` claim** (UUID), NOT auto-generated by Prisma — keeps SSO identity in sync
-12. **`ensureUser()` is called on every `POST /projects`** — idempotent upsert handles first-time SSO logins without extra roundtrips
-13. **Ownership leak prevention** — `delete/rename` fetches by `{ id }` then checks `userId`; returns **404** (not 403) when record doesn't belong to caller
-14. **Email auth + password reset** — Supabase issues a fresh JWT after password reset; the JWKS-based verification (exp + signature) automatically rejects old tokens; no additional guard logic is needed for post-reset invalidation
-15. **Upload persistence strategy** — `uploadToProject()` uses a delete-then-insert transaction (not upserts) because GEDCOM re-uploads replace the entire dataset; this avoids orphan detection complexity
-16. **Family reconstruction** — `reconstructFamilies()` rebuilds `GedcomFamily[]` from flat SPOUSE + PARENT rows; deduplicates spouse pairs via sorted DB-id keys; distributes children into their parents' existing FAM or creates implicit single/two-parent families
-17. **Person metadata column** — Raw GEDCOM date strings, places, and family cross-references (`familySpouseIds`, `familyChildId`) are stored in the `metadata` JSON column rather than as separate DB columns, avoiding schema migration for every new GEDCOM tag
+9. **`SUPABASE_URL` must be set** — strategy throws at bootstrap if missing; used to construct the JWKS URI
+10. **`User.id` is the Supabase `sub` claim** (UUID), NOT auto-generated by Prisma
+11. **`ensureUser()` is called on every `POST /projects`** — idempotent upsert handles first-time SSO logins
+12. **Ownership leak prevention** — returns **404** (not 403) when record doesn't belong to caller
+13. **Upload persistence strategy** — delete-then-insert transaction (not upserts) for clean GEDCOM re-uploads
+14. **Family reconstruction** — `reconstructFamilies()` rebuilds `GedcomFamily[]` from flat SPOUSE + PARENT rows
+15. **Person metadata column** — Dates, places, family cross-references, and canvas positions stored in `metadata` JSON
+16. **Dual ID resolution** — All person/relationship endpoints check both `id` (UUID) and `gedcomId` (e.g. `@I5@`) via Prisma `OR` queries, because React Flow uses gedcomId as the node ID for imported persons
+17. **Position batch endpoint** — `PATCH /projects/:id/positions` uses a `$transaction` for atomicity when updating multiple persons
