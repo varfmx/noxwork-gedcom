@@ -294,7 +294,7 @@ export class ProjectService {
             name: tree.name,
             description: tree.description,
             nodeCount: tree.persons.length,
-            edgeCount: tree.relationships.length,
+            edgeCount: families.length,
             createdAt: tree.createdAt,
             updatedAt: tree.updatedAt,
             individuals,

@@ -104,9 +104,6 @@ function PersonNodeComponent({ data }: NodeProps) {
                         <h3 className="text-sm font-semibold text-nox-text truncate">
                             {nodeData.fullName || 'Unknown'}
                         </h3>
-                        <p className="text-[10px] text-nox-text-muted font-mono truncate">
-                            {nodeData.gedcomId}
-                        </p>
                     </div>
                 </div>
 
