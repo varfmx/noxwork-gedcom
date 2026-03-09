@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useAuthStore } from './store/useAuthStore';
+import { useThemeStore } from './store/useThemeStore';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import LoginPage from './pages/LoginPage';
 import AuthCallback from './pages/AuthCallback';
@@ -24,6 +25,8 @@ import VisualizerPage from './pages/VisualizerPage';
  */
 export default function App() {
     const initialize = useAuthStore((s) => s.initialize);
+    // Subscribe to theme mode so it's rehydrated from localStorage on mount
+    useThemeStore((s) => s.mode);
 
     // Rehydrate session from Supabase local storage on first load
     useEffect(() => {

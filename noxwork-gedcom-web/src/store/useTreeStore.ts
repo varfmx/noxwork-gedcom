@@ -19,6 +19,7 @@ import type {
     ProjectUploadResponse,
 } from '../types/api';
 import { getAccessToken } from '../lib/supabase';
+import { useProjectStore } from './useProjectStore';
 
 /* ─── Constants ──────────────────────────────────────────────── */
 
@@ -90,6 +91,7 @@ const flushPositionUpdates = debounce(async () => {
         });
 
         if (!res.ok) throw new Error('Failed to sync positions');
+        useProjectStore.getState().touchProject(projectId);
     } catch (err) {
         console.error(err);
         showToast('Failed to save node positions. Rolling back.', true);
@@ -673,6 +675,7 @@ export const useTreeStore = create<TreeState>((set, get) => ({
             }));
 
             showToast('Canvas cleared');
+            useProjectStore.getState().touchProject(projectId);
         } catch (err) {
             console.error(err);
             showToast('Failed to clear canvas. Rolling back.', true);
@@ -726,6 +729,7 @@ export const useTreeStore = create<TreeState>((set, get) => ({
             }));
 
             showToast('Person created');
+            useProjectStore.getState().touchProject(projectId);
         } catch (err) {
             console.error(err);
             showToast('Failed to create person', true);
@@ -769,6 +773,7 @@ export const useTreeStore = create<TreeState>((set, get) => ({
             });
             if (!res.ok) throw new Error('Failed to update person');
             showToast('Person updated');
+            useProjectStore.getState().touchProject(projectId);
         } catch (err) {
             console.error(err);
             showToast('Failed to update person. Rolling back.', true);
@@ -802,6 +807,7 @@ export const useTreeStore = create<TreeState>((set, get) => ({
             });
             if (!res.ok) throw new Error('Failed to delete person');
             showToast('Person deleted');
+            useProjectStore.getState().touchProject(projectId);
         } catch (err) {
             console.error(err);
             showToast('Failed to delete person. Rolling back.', true);
@@ -857,6 +863,7 @@ export const useTreeStore = create<TreeState>((set, get) => ({
             });
             if (!res.ok) throw new Error('Failed to create relationship');
             showToast('Relationship created');
+            useProjectStore.getState().touchProject(projectId);
         } catch (err) {
             console.error(err);
             showToast('Failed to create relationship. Rolling back.', true);

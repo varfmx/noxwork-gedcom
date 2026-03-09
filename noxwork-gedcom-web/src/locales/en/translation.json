@@ -5,7 +5,9 @@
     "cancel": "Cancel",
     "loading": "Loading…",
     "error": "Error",
-    "optional": "(optional)"
+    "optional": "(optional)",
+    "themeToggleLight": "Switch to light mode",
+    "themeToggleDark": "Switch to dark mode"
   },
   "dashboard": {
     "greetingPrefix": "Welcome back,",

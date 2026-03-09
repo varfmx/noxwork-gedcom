@@ -27,6 +27,7 @@ interface ProjectState {
     renameProject: (id: string, name: string) => Promise<void>;
     duplicateProject: (id: string) => Promise<void>;
     setActiveProject: (id: string | null) => void;
+    touchProject: (id: string) => void;
     clearError: () => void;
 }
 
@@ -144,6 +145,14 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     /* ── Helpers ─────────────────────────────────────────────── */
 
     setActiveProject: (id) => set({ activeProjectId: id }),
+
+    /** Optimistically update a project's updatedAt to "now" */
+    touchProject: (id) =>
+        set((s) => ({
+            projects: s.projects.map((p) =>
+                p.id === id ? { ...p, updatedAt: new Date().toISOString() } : p,
+            ),
+        })),
 
     clearError: () => set({ error: null }),
 }));

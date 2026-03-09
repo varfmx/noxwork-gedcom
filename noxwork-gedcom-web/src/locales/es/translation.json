@@ -5,7 +5,9 @@
     "cancel": "Cancelar",
     "loading": "Cargando…",
     "error": "Error",
-    "optional": "(opcional)"
+    "optional": "(opcional)",
+    "themeToggleLight": "Cambiar a modo claro",
+    "themeToggleDark": "Cambiar a modo oscuro"
   },
   "dashboard": {
     "greetingPrefix": "Bienvenido de nuevo,",

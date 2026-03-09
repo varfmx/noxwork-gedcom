@@ -5,6 +5,7 @@ import { TreeCanvas } from '../features/visualizer/TreeCanvas';
 import { FileUploader } from '../features/uploader/FileUploader';
 import { useTreeStore } from '../store/useTreeStore';
 import { useProjectStore } from '../store/useProjectStore';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 /**
  * VisualizerPage — The interactive family tree canvas.
@@ -128,19 +129,22 @@ export default function VisualizerPage() {
                         </div>
 
                         {/* Back to dashboard */}
-                        <button
-                            onClick={handleBackToDashboard}
-                            title={t('visualizer.canvas.backToDashboard')}
-                            className="
-                                p-1.5 rounded-lg text-nox-text-muted
-                                hover:text-nox-cobalt-light hover:bg-nox-surface-lighter
-                                transition-colors duration-150
-                            "
-                        >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
-                            </svg>
-                        </button>
+                        <div className="flex items-center gap-1">
+                            <ThemeToggle />
+                            <button
+                                onClick={handleBackToDashboard}
+                                title={t('visualizer.canvas.backToDashboard')}
+                                className="
+                                    p-1.5 rounded-lg text-nox-text-muted
+                                    hover:text-nox-cobalt-light hover:bg-nox-surface-lighter
+                                    transition-colors duration-150
+                                "
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
 
                     {/* Active project indicator — now editable */}

@@ -15,6 +15,7 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import { useTreeStore } from '../../store/useTreeStore';
+import { useThemeStore } from '../../store/useThemeStore';
 import type { PersonNodeData } from '../../types/api';
 import { PersonNode } from './nodes/PersonNode';
 import { EditPersonPanel } from './EditPersonPanel';
@@ -47,6 +48,7 @@ interface ContextMenuState {
 /* ─── Inner Component (needs ReactFlowProvider ancestor) ────── */
 
 function TreeCanvasInner({ projectName }: TreeCanvasProps) {
+    const { mode } = useThemeStore();
     const nodes = useTreeStore((s) => s.nodes);
     const edges = useTreeStore((s) => s.edges);
     const onNodesChange = useTreeStore((s) => s.onNodesChange);
@@ -218,7 +220,7 @@ function TreeCanvasInner({ projectName }: TreeCanvasProps) {
                 onConnect={handleConnect}
                 onNodeContextMenu={handleNodeContextMenu}
                 nodeTypes={nodeTypes}
-                colorMode="dark"
+                colorMode={mode}
                 fitView
                 fitViewOptions={{ padding: 0.2, maxZoom: 1 }}
                 minZoom={0.1}

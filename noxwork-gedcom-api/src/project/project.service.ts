@@ -69,6 +69,17 @@ export class ProjectService {
         });
     }
 
+    /**
+     * Touches the Tree's `updatedAt` timestamp so the dashboard shows
+     * accurate "last modified" times after person/relationship changes.
+     */
+    private async touchProjectTimestamp(projectId: string): Promise<void> {
+        await this.prisma.tree.update({
+            where: { id: projectId },
+            data: { updatedAt: new Date() },
+        });
+    }
+
     // ── GET /projects ─────────────────────────────────────────────────────────
 
     /**
@@ -474,6 +485,8 @@ export class ProjectService {
             `Person created: id=${person.id} name="${dto.firstName}" project=${projectId}`,
         );
 
+        await this.touchProjectTimestamp(projectId);
+
         return person;
     }
 
@@ -537,6 +550,8 @@ export class ProjectService {
             `Person updated: id=${personId} project=${projectId}`,
         );
 
+        await this.touchProjectTimestamp(projectId);
+
         return updated;
     }
 
@@ -579,6 +594,8 @@ export class ProjectService {
         this.logger.log(
             `Person deleted: id=${personId} project=${projectId}`,
         );
+
+        await this.touchProjectTimestamp(projectId);
     }
 
     // ── POST /projects/:id/relationships ──────────────────────────────────────
@@ -636,6 +653,8 @@ export class ProjectService {
             `Relationship created: ${dto.type} ${resolvedSourceId} → ${resolvedTargetId} project=${projectId}`,
         );
 
+        await this.touchProjectTimestamp(projectId);
+
         return relationship;
     }
 
@@ -689,6 +708,8 @@ export class ProjectService {
         this.logger.log(
             `Batch position update: ${dto.updates.length} nodes for project ${projectId}`,
         );
+
+        await this.touchProjectTimestamp(projectId);
     }
 
     // ── Helper: Reconstruct GedcomFamily[] from relationships ──────────────────

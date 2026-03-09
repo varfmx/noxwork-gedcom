@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* ─── Noxwork Design Tokens ──────────────────────────────────── */
+/* ─── Noxwork Design Tokens (Dark = default) ─────────────────── */
 @theme {
   --color-nox-cobalt: #0047AB;
   --color-nox-cobalt-light: #1a6dd4;
@@ -18,6 +18,21 @@
   --color-nox-unknown: #6b7280;
   --color-nox-warning: #f59e0b;
   --color-nox-danger: #ef4444;
+}
+
+/* ─── Light Mode Overrides ───────────────────────────────────── */
+
+:root.light {
+  --color-nox-surface: #f8fafc;
+  --color-nox-surface-light: #ffffff;
+  --color-nox-surface-lighter: #e2e8f0;
+  --color-nox-text: #1e293b;
+  --color-nox-text-muted: #64748b;
+  --color-nox-male: #2563eb;
+  --color-nox-female: #ea580c;
+  --color-nox-unknown: #9ca3af;
+  --color-nox-warning: #d97706;
+  --color-nox-danger: #dc2626;
 }
 
 /* ─── Global Styles ──────────────────────────────────────────── */
@@ -42,7 +57,13 @@ body,
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ─── React Flow Overrides ───────────────────────────────────── */
+/* Smooth transitions when switching themes */
+body,
+body *:not(.react-flow__node):not(.react-flow__handle):not(.react-flow__edge) {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* ─── React Flow Overrides (Dark Mode) ───────────────────────── */
 
 .react-flow__minimap {
   border-radius: 8px;
@@ -64,6 +85,34 @@ body,
 
 .react-flow__controls button:hover {
   background-color: var(--color-nox-surface-lighter);
+}
+
+/* ─── React Flow Overrides (Light Mode) ──────────────────────── */
+
+.light .react-flow__background {
+  background-color: #f8fafc !important;
+}
+
+.light .react-flow__pane {
+  background-color: #f8fafc;
+}
+
+.light .react-flow__minimap {
+  background-color: #ffffff;
+}
+
+.light .react-flow__controls button {
+  background-color: #ffffff;
+  color: #1e293b;
+  border-color: #e2e8f0;
+}
+
+.light .react-flow__controls button:hover {
+  background-color: #f1f5f9;
+}
+
+.light .react-flow__controls button svg {
+  fill: #1e293b;
 }
 
 /* ─── Skeleton shimmer keyframe ──────────────────────────────── */
@@ -102,3 +151,4 @@ body,
 .animate-in.slide-in-from-right {
   animation: slideInFromRight 0.2s ease-out;
 }
+
