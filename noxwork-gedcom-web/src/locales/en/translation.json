@@ -79,7 +79,9 @@
       "uploadDrag": "Drag and drop a",
       "uploadDragSuffix": "file into the sidebar.",
       "backToDashboard": "← Back to Dashboard",
-      "clearCanvas": "✕ Clear Canvas"
+      "clearCanvas": "✕ Clear Canvas",
+      "emptyTreeHint": "Start building your family tree by creating the first person.",
+      "orImportGedcom": "Or import a GEDCOM file from the sidebar."
     },
     "uploader": {
       "dropHint": "Drop .ged file or click to upload",
@@ -177,6 +179,17 @@
     "connectionTypeHint": "What type of relationship is this?",
     "parentChildDesc": "Source is a parent of target",
     "spouseDesc": "Partners / married couple"
+  },
+  "contextMenu": {
+    "addChild": "Add Child",
+    "addSpouse": "Add Spouse",
+    "addParent": "Add Parent",
+    "delete": "Delete Person"
+  },
+  "projectName": {
+    "rename": "Click to rename",
+    "placeholder": "Project name",
+    "saved": "Project renamed"
   },
   "export": {
     "download": "Download",

@@ -119,6 +119,7 @@ interface TreeState {
     onEdgesChange: OnEdgesChange;
     applyLayout: () => void;
     reset: () => void;
+    clearCanvas: () => Promise<void>;
 
     // CRUD Actions
     createPerson: (data: { firstName: string; lastName?: string; gender?: string; birthDate?: string }) => Promise<void>;
@@ -639,6 +640,44 @@ export const useTreeStore = create<TreeState>((set, get) => ({
             activeProjectId: null,
             stats: null,
         });
+    },
+
+    /**
+     * Clears all persons from the canvas AND backend, but keeps the
+     * project context (sessionId, activeProjectId) intact so the user
+     * can start building a new tree or re-import a GEDCOM.
+     */
+    clearCanvas: async () => {
+        const projectId = get().activeProjectId;
+        if (!projectId) return;
+
+        const previousNodes = get().nodes;
+        const previousEdges = get().edges;
+        const previousStats = get().stats;
+
+        // Optimistic clear
+        set({
+            nodes: [],
+            edges: [],
+            stats: { individualsCount: 0, familiesCount: 0 },
+        });
+
+        try {
+            // Fire all deletes (the backend cascade handles relationships)
+            await Promise.allSettled(previousNodes.map(async (n) => {
+                const res = await fetch(`${API_BASE}/projects/${projectId}/persons/${n.id}`, {
+                    method: 'DELETE',
+                    headers: await authHeaders(),
+                });
+                if (!res.ok) throw new Error(`Failed to delete ${n.id}`);
+            }));
+
+            showToast('Canvas cleared');
+        } catch (err) {
+            console.error(err);
+            showToast('Failed to clear canvas. Rolling back.', true);
+            set({ nodes: previousNodes, edges: previousEdges, stats: previousStats });
+        }
     },
 
     // --- CRUD Actions ---

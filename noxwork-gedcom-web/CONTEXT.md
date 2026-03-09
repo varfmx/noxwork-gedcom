@@ -1,7 +1,7 @@
 # noxwork-gedcom-web — Project Context
 
 > **Last updated:** 2026-03-08
-> **Status:** Phase 7 — Manual Editing, Position Persistence & GEDCOM Date Picker ✅
+> **Status:** Phase 8 — Context Menu, Export, Canvas Management ✅
 > **Runtime:** React 19 + Vite 7 + TypeScript 5.9 (strict mode)
 > **Target:** ES2022, bundler module resolution
 
@@ -19,8 +19,10 @@ The frontend is responsible for:
 - Displaying enriched individual data including multi-role kinship overlaps
 - Automatic hierarchical layout via Dagre with spouse alignment
 - **Editor Mode:** Creating, editing, and deleting person nodes; drawing relationship edges; GEDCOM-format date picker
+- **Context Menu:** Right-click nodes to add child/spouse/parent or delete; Delete key support
+- **Canvas Management:** Clear canvas (batch delete), inline project rename
 - **Position Persistence:** Saving & restoring canvas node positions; "Auto Organize" layout button
-- (Future) Exporting tree visualizations as PDF/PNG
+- **Export:** High-resolution PNG/PDF export with project name title and Noxwork branding
 
 The **backend** (NestJS 11 at `localhost:3000`) parses GEDCOM files, resolves kinship relationships, and persists data via Prisma/PostgreSQL.
 
@@ -85,9 +87,11 @@ noxwork-gedcom-web/
 │   │
 │   └── features/                                   # ══ Feature Modules ══
 │       ├── visualizer/                             # Tree visualization & editing
-│       │   ├── TreeCanvas.tsx                      # React Flow canvas (node selection, edge creation, pane click)
+│       │   ├── TreeCanvas.tsx                      # React Flow canvas (node selection, edge creation, context menu, keyboard delete)
 │       │   ├── EditPersonPanel.tsx                 # Slide-in panel: edit firstName/lastName/gender/birthDate, delete
 │       │   ├── ConnectionTypeModal.tsx             # Modal for choosing Parent→Child or Spouse relationship type
+│       │   ├── NodeContextMenu.tsx                # Right-click menu: add child/spouse/parent, delete person
+│       │   ├── ExportButton.tsx                   # Download dropdown (PNG/PDF) with progress overlay
 │       │   └── nodes/
 │       │       └── PersonNode.tsx                  # Custom node (gender border, multi-role badge, side handles)
 │       │
@@ -119,7 +123,7 @@ Components are organized by **feature area**, not by type:
 
 ```
 features/
-  visualizer/  → TreeCanvas + EditPersonPanel + ConnectionTypeModal + PersonNode
+  visualizer/  → TreeCanvas + EditPersonPanel + ConnectionTypeModal + NodeContextMenu + ExportButton + PersonNode
   uploader/    → FileUploader (file import)
   dashboard/   → ProjectTable + EmptyState
 ```
@@ -136,6 +140,7 @@ createPerson(data)                    → POST /api/projects/:id/persons       �
 updatePerson(personId, data)          → PATCH /api/projects/:id/persons/:pid → optimistic update
 deletePerson(personId)                → DELETE /api/projects/:id/persons/:pid → optimistic remove
 createRelationship(data)              → POST /api/projects/:id/relationships → add edge to canvas
+clearCanvas()                         → DELETE each person via API            → clear nodes/edges, keep project context
 applyLayout()                         → dagre layout → debounced PATCH /projects/:id/positions
 ```
 
@@ -158,6 +163,8 @@ React Flow's `nodeTypes` registry maps `'person'` → `PersonNode` component:
 
 - **EditPersonPanel:** Slide-in side panel (320px) for editing person details. Cobalt header, orange save button. Includes inline delete confirmation dialog.
 - **ConnectionTypeModal:** Appears when an edge is drawn between two nodes. User chooses Parent→Child or Spouse.
+- **NodeContextMenu:** Right-click context menu on person nodes. Options: Add Child, Add Spouse, Add Parent, Delete Person. Actions create a new person + relationship and auto-select the new node for editing.
+- **ExportButton:** Download dropdown in the canvas panel. Exports PNG or PDF with progress overlay. Uses `ExportService` for print-friendly capture, watermark, and project title rendering.
 - **GedcomDatePicker:** Custom date picker outputting GEDCOM format (`D MMM YYYY`). Features a 4×3 month grid, day/year number inputs, and live preview.
 
 ### 4.5 API Proxy
@@ -288,15 +295,25 @@ All routes are declared in `App.tsx` using `<Routes>`:
 - [x] **Zustand CRUD actions** — createPerson, updatePerson, deletePerson, createRelationship
 - [x] **i18n** — All editor keys in EN + ES
 
-### 🔲 Phase 8 — Interactivity & Polish
+### ✅ Phase 8 — Context Menu, Export & Canvas Management
+- [x] **NodeContextMenu** — Right-click context menu on nodes (Add Child, Add Spouse, Add Parent, Delete)
+- [x] **Keyboard Delete** — Delete/Backspace key removes selected node (ignores when input focused)
+- [x] **ExportButton** — PNG/PDF export with progress overlay
+- [x] **ExportService** — Print-friendly CSS injection, Noxwork watermark + logo, project name title bar
+- [x] **Inline Project Rename** — Click project name in sidebar to rename (Enter to save, Escape to cancel)
+- [x] **Clear Canvas** — `clearCanvas()` action batch-deletes all persons from backend, clears UI, keeps project context
+- [x] **Create person on empty project** — Sidebar shows create form even when tree is empty
+- [x] **Auto-hide import box** — Import section hidden when persons exist; accessible via "Re-import" or "Clear Canvas"
+- [x] **i18n** — `contextMenu.*`, `projectName.*`, `visualizer.canvas.emptyTreeHint` keys in EN + ES
+- [x] **CSS animations** — `fadeInZoom` for context menu, `slideInFromRight` for edit panel
+
+### 🔲 Phase 9 — Interactivity & Polish
 - [ ] Search / filter individuals
 - [ ] Highlight kinship paths on hover
 - [ ] Zoom to selected individual
 - [ ] Responsive sidebar (collapsible on mobile)
-- [ ] Keyboard shortcuts
-- [ ] Export tree as PNG/PDF
 
-### 🔲 Phase 9 — Deployment
+### 🔲 Phase 10 — Deployment
 - [x] Vercel deploy configuration
 - [ ] Environment variable management for staging/production
 
@@ -323,3 +340,6 @@ All routes are declared in `App.tsx` using `<Routes>`:
 17. **Position persistence** — `flushPositionUpdates` debounces 1s then batch-saves via `PATCH /projects/:id/positions` with auth headers
 18. **Conditional layout** — `loadProject()` skips `applyLayout()` when saved positions exist in the API response
 19. **GedcomDatePicker** — Outputs dates in GEDCOM standard format `D MMM YYYY` (e.g. `8 DEC 1977`); supports partial dates (year-only, month+year)
+20. **Context menu** — Right-click handlers use `onNodeContextMenu` from React Flow; `deleteKeyCode` is set to `null` to use custom delete logic with input-focus guard
+21. **Export pipeline** — `ExportService` injects a print-friendly CSS stylesheet, captures via `html-to-image`, adds watermark via canvas compositing, then adds project title bar
+22. **clearCanvas vs reset** — `clearCanvas()` deletes all persons from backend but keeps `sessionId`/`activeProjectId`; `reset()` disconnects from the project entirely

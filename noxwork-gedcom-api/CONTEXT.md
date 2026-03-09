@@ -348,9 +348,9 @@ The `GedcomEngine` currently supports GEDCOM 5.5/5.5.1 tags:
 - [x] Position storage in Person metadata JSON (`positionX`, `positionY`)
 - [x] `findOneForUser()` returns positions in API response
 
-### 🔲 Phase 8 — Export Enhancements
+### ✅ Phase 8 — Export Enhancements
 - [x] GEDCOM 5.5.1 export
-- [ ] PDF/PNG export of visualized trees
+- [x] PNG/PDF export of visualized trees (implemented client-side in `ExportService`)
 
 ### 🔲 Phase 9 — Deployment
 - [x] Backend: Railway.app (Node.js runtime)

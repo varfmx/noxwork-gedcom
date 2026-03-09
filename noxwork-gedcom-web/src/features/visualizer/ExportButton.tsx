@@ -69,6 +69,7 @@ export function ExportButton({ projectName }: ExportButtonProps) {
 
                 await exportFn(wrapper, {
                     fileName,
+                    projectName,
                     scale: 2,
                     onProgress: setProgress,
                 });

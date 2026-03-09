@@ -14,6 +14,8 @@ export type ExportFormat = 'png' | 'pdf';
 export interface ExportOptions {
     /** Name used for the downloaded file (without extension) */
     fileName?: string;
+    /** Display name of the project to render as a title on the export */
+    projectName?: string;
     /** Pixel scale multiplier for PNG resolution (default: 2) */
     scale?: number;
     /** Callback to report progress (0–100) */
@@ -27,6 +29,8 @@ const LOGO_PATH = '/noxwork_logo_blue.png';
 const LOGO_HEIGHT = 20;      // base logo height in px
 const WATERMARK_FONT_SIZE = 11;
 const WATERMARK_PADDING = 16;
+const TITLE_FONT_SIZE = 18;
+const TITLE_PADDING = 24;
 const DEFAULT_SCALE = 2;
 
 /* ─── Print-Friendly CSS Override Sheet ─────────────────────── */
@@ -246,6 +250,48 @@ async function addWatermark(
     return canvas.toDataURL('image/png');
 }
 
+/* ─── Title Drawing ─────────────────────────────────────────── */
+
+/**
+ * Draws the project title at the top-left or top-center of the image.
+ */
+function addTitle(
+    ctx: CanvasRenderingContext2D,
+    title: string,
+    width: number,
+    hiDpi: number,
+): void {
+    const padding = TITLE_PADDING * hiDpi;
+    const fontSize = TITLE_FONT_SIZE * hiDpi;
+    const subtitleFontSize = (TITLE_FONT_SIZE - 5) * hiDpi;
+
+    // Draw a subtle background bar at the top
+    const barHeight = fontSize + padding * 2;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+    ctx.fillRect(0, 0, width, barHeight);
+
+    // Draw a thin bottom border for the bar
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+    ctx.lineWidth = hiDpi;
+    ctx.beginPath();
+    ctx.moveTo(0, barHeight);
+    ctx.lineTo(width, barHeight);
+    ctx.stroke();
+
+    // Draw the title text
+    ctx.font = `700 ${fontSize}px "Inter", "Segoe UI", system-ui, sans-serif`;
+    ctx.fillStyle = '#1a1a1a';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(title, padding, barHeight / 2);
+
+    // Draw a subtle "Family Tree" subtitle next to the title
+    const titleWidth = ctx.measureText(title).width;
+    ctx.font = `400 ${subtitleFontSize}px "Inter", "Segoe UI", system-ui, sans-serif`;
+    ctx.fillStyle = '#888888';
+    ctx.fillText('  ·  Family Tree', padding + titleWidth, barHeight / 2);
+}
+
 /* ─── Main Export Functions ──────────────────────────────────── */
 
 /**
@@ -256,7 +302,7 @@ async function captureTreeAsPng(
     viewportElement: HTMLElement,
     options: ExportOptions = {},
 ): Promise<string> {
-    const { scale = DEFAULT_SCALE, onProgress } = options;
+    const { scale = DEFAULT_SCALE, onProgress, projectName } = options;
 
     onProgress?.(10);
 
@@ -290,10 +336,28 @@ async function captureTreeAsPng(
 
         onProgress?.(65);
 
-        // Add watermark + logo
+        // Add watermark + logo + title
         const width = viewportElement.offsetWidth * scale;
         const height = viewportElement.offsetHeight * scale;
         const watermarked = await addWatermark(rawDataUrl, width, height);
+
+        onProgress?.(80);
+
+        // Add project name title if provided
+        if (projectName) {
+            const hiDpi = width > 2000 ? 2 : 1;
+            const img = await loadImage(watermarked);
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) throw new Error('Canvas 2D context unavailable');
+            ctx.drawImage(img, 0, 0, width, height);
+            addTitle(ctx, projectName, width, hiDpi);
+
+            onProgress?.(90);
+            return canvas.toDataURL('image/png');
+        }
 
         onProgress?.(90);
 

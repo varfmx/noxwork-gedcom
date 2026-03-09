@@ -92,7 +92,12 @@ The frontend dashboard for visualizing and editing GEDCOM family trees as intera
 - **Position Persistence** — Drag nodes to arrange them; positions are saved to the database and restored on load.
 - **Edit Person Panel** — Slide-in side panel for editing firstName, lastName, gender, and birth date with inline delete confirmation.
 - **Connection Drawing** — Draw edges between nodes; choose Parent→Child or Spouse relationship type.
-- **Create New Person** — Inline sidebar form to add new individuals to the tree.
+- **Create New Person** — Inline sidebar form to add new individuals to the tree (available even on empty projects).
+- **Right-Click Context Menu** — Right-click any node to add a child, spouse, or parent; or delete the person.
+- **Keyboard Delete** — Select a node and press Delete/Backspace to remove it.
+- **Inline Project Rename** — Click the project name in the sidebar to rename it without leaving the tree view.
+- **Clear Canvas** — Remove all persons from the canvas (with backend sync) while staying in the project.
+- **Export PNG/PDF** — Download the tree as a high-resolution PNG or PDF with project name title and Noxwork branding.
 - **GEDCOM Date Picker** — Custom date picker outputting GEDCOM standard format (e.g. `8 DEC 1977`).
 - **Drag & Drop Upload** — Upload `.ged` files directly in the browser.
 - **Dark Theme** — Noxwork-branded cobalt/orange palette with Tailwind CSS v4.
@@ -176,12 +181,17 @@ npm run dev                  # http://localhost:5173 (proxies /api → :3000)
 - [x] GEDCOM date picker (day/month/year → `D MMM YYYY`)
 - [x] Backend deployment (Railway)
 - [x] Frontend deployment (Vercel)
+- [x] Export tree as PNG/PDF with project name title
+- [x] Right-click context menu (add child/spouse/parent, delete)
+- [x] Keyboard shortcuts (Delete/Backspace to remove nodes)
+- [x] Inline project rename from tree view
+- [x] Clear Canvas (batch delete all persons, keep project context)
+- [x] Create persons without importing GEDCOM
 
 ### 🔲 In Progress / Planned
 
 - [ ] Search / filter individuals on the canvas
 - [ ] Highlight kinship paths on hover
-- [ ] Export tree as PNG/PDF
 - [ ] Responsive sidebar (collapsible on mobile)
 - [ ] Custom domain (`gedcom.noxwork.net`)
 

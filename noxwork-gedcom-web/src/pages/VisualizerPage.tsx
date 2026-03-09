@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { TreeCanvas } from '../features/visualizer/TreeCanvas';
@@ -26,9 +26,11 @@ export default function VisualizerPage() {
     const activeProjectId = useProjectStore((s) => s.activeProjectId);
     const activeProject = useProjectStore((s) => s.projects.find((p) => p.id === s.activeProjectId));
     const setActiveProject = useProjectStore((s) => s.setActiveProject);
+    const renameProject = useProjectStore((s) => s.renameProject);
 
     const createPerson = useTreeStore((s) => s.createPerson);
     const applyLayout = useTreeStore((s) => s.applyLayout);
+    const clearCanvas = useTreeStore((s) => s.clearCanvas);
 
     const [showReimport, setShowReimport] = useState(false);
     const [showCreateForm, setShowCreateForm] = useState(false);
@@ -36,6 +38,11 @@ export default function VisualizerPage() {
     const [newLastName, setNewLastName] = useState('');
     const [newGender, setNewGender] = useState<'M' | 'F' | 'U'>('U');
     const [isCreating, setIsCreating] = useState(false);
+
+    // ── Inline Rename State ──
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [editName, setEditName] = useState('');
+    const renameInputRef = useRef<HTMLInputElement>(null);
 
     /** Whether the tree has persisted data loaded */
     const hasTreeData = nodes.length > 0;
@@ -73,9 +80,29 @@ export default function VisualizerPage() {
     };
 
     const handleClearTree = () => {
-        reset();
+        clearCanvas();
         setShowReimport(false);
     };
+
+    // ── Inline Rename Handlers ──
+    const handleStartRename = useCallback(() => {
+        setEditName(activeProject?.name ?? '');
+        setIsEditingName(true);
+        setTimeout(() => renameInputRef.current?.select(), 50);
+    }, [activeProject?.name]);
+
+    const handleConfirmRename = useCallback(async () => {
+        const trimmed = editName.trim();
+        if (trimmed && activeProjectId && trimmed !== activeProject?.name) {
+            await renameProject(activeProjectId, trimmed);
+        }
+        setIsEditingName(false);
+    }, [editName, activeProjectId, activeProject?.name, renameProject]);
+
+    const handleRenameKeyDown = useCallback((e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') handleConfirmRename();
+        if (e.key === 'Escape') setIsEditingName(false);
+    }, [handleConfirmRename]);
 
     return (
         <div className="flex h-screen w-screen overflow-hidden bg-nox-surface">
@@ -116,12 +143,58 @@ export default function VisualizerPage() {
                         </button>
                     </div>
 
-                    {/* Active project indicator */}
+                    {/* Active project indicator — now editable */}
                     {activeProjectId && (
-                        <div className="mt-2 px-2 py-1 rounded-md bg-nox-cobalt/10 border border-nox-cobalt/20">
-                            <p className="text-[10px] text-nox-cobalt-light font-medium truncate">
-                                {activeProject?.name ?? t('visualizer.sidebar.projectActive')}
-                            </p>
+                        <div className="mt-2">
+                            {isEditingName ? (
+                                <div className="flex items-center gap-1">
+                                    <input
+                                        ref={renameInputRef}
+                                        value={editName}
+                                        onChange={(e) => setEditName(e.target.value)}
+                                        onBlur={handleConfirmRename}
+                                        onKeyDown={handleRenameKeyDown}
+                                        placeholder={t('projectName.placeholder')}
+                                        autoFocus
+                                        className="
+                                            flex-1 bg-nox-surface border border-nox-cobalt/40 rounded-md
+                                            px-2 py-1 text-[11px] text-nox-cobalt-light font-medium
+                                            focus:outline-none focus:ring-2 focus:ring-nox-cobalt/40
+                                            transition-all
+                                        "
+                                    />
+                                    <button
+                                        onClick={handleConfirmRename}
+                                        className="p-1 rounded text-nox-cobalt-light hover:bg-nox-cobalt/20 transition-colors"
+                                        title="Save"
+                                    >
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={handleStartRename}
+                                    title={t('projectName.rename')}
+                                    className="
+                                        w-full text-left group
+                                        px-2 py-1 rounded-md
+                                        bg-nox-cobalt/10 border border-nox-cobalt/20
+                                        hover:border-nox-cobalt/40 hover:bg-nox-cobalt/15
+                                        transition-all duration-150
+                                    "
+                                >
+                                    <div className="flex items-center gap-1.5">
+                                        <p className="text-[10px] text-nox-cobalt-light font-medium truncate flex-1">
+                                            {activeProject?.name ?? t('visualizer.sidebar.projectActive')}
+                                        </p>
+                                        <svg className="w-3 h-3 text-nox-cobalt-light/50 group-hover:text-nox-cobalt-light transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                                        </svg>
+                                    </div>
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>
@@ -338,8 +411,107 @@ export default function VisualizerPage() {
                             </div>
                         </>
                     ) : (
-                        /* ── Upload / Import Panel ── */
+                        /* ── Empty State / Import Panel ── */
                         <>
+                            {/* ── Create First Person (shown when tree is empty) ── */}
+                            {!hasTreeData && sessionId && (
+                                <div>
+                                    <h2 className="text-xs font-semibold text-nox-text-muted uppercase tracking-wider mb-3">
+                                        {t('editor.addPerson')}
+                                    </h2>
+                                    <div className="bg-nox-surface-light rounded-xl border border-nox-surface-lighter p-4 space-y-3">
+                                        <p className="text-xs text-nox-text-muted leading-relaxed">
+                                            {t('visualizer.canvas.emptyTreeHint')}
+                                        </p>
+                                        {!showCreateForm ? (
+                                            <button
+                                                onClick={() => setShowCreateForm(true)}
+                                                className="
+                                                    w-full py-2.5 rounded-xl text-sm font-semibold
+                                                    bg-nox-orange hover:bg-nox-orange-dark text-white
+                                                    shadow-lg shadow-nox-orange/20
+                                                    transition-all duration-200
+                                                    flex items-center justify-center gap-2
+                                                "
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                                </svg>
+                                                {t('editor.addPerson')}
+                                            </button>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                <input
+                                                    value={newFirstName}
+                                                    onChange={(e) => setNewFirstName(e.target.value)}
+                                                    placeholder={t('editor.firstNamePlaceholder')}
+                                                    autoFocus
+                                                    className="
+                                                        w-full bg-nox-surface border border-nox-surface-lighter rounded-lg
+                                                        px-3 py-2 text-sm text-nox-text placeholder:text-nox-text-muted
+                                                        focus:outline-none focus:ring-2 focus:ring-nox-cobalt/40 focus:border-nox-cobalt
+                                                        transition-all
+                                                    "
+                                                />
+                                                <input
+                                                    value={newLastName}
+                                                    onChange={(e) => setNewLastName(e.target.value)}
+                                                    placeholder={t('editor.lastNamePlaceholder')}
+                                                    className="
+                                                        w-full bg-nox-surface border border-nox-surface-lighter rounded-lg
+                                                        px-3 py-2 text-sm text-nox-text placeholder:text-nox-text-muted
+                                                        focus:outline-none focus:ring-2 focus:ring-nox-cobalt/40 focus:border-nox-cobalt
+                                                        transition-all
+                                                    "
+                                                />
+                                                <div className="grid grid-cols-3 gap-1.5">
+                                                    {([['M', '♂'], ['F', '♀'], ['U', '?']] as const).map(([v, icon]) => (
+                                                        <button
+                                                            key={v}
+                                                            type="button"
+                                                            onClick={() => setNewGender(v)}
+                                                            className={`
+                                                                py-1.5 rounded-lg text-xs font-medium border transition-all
+                                                                ${newGender === v
+                                                                    ? 'bg-nox-cobalt/20 border-nox-cobalt text-nox-cobalt-light'
+                                                                    : 'bg-nox-surface border-nox-surface-lighter text-nox-text-muted'
+                                                                }
+                                                            `}
+                                                        >
+                                                            {icon}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => { setShowCreateForm(false); setNewFirstName(''); setNewLastName(''); }}
+                                                        className="flex-1 py-2 rounded-lg text-xs text-nox-text-muted border border-nox-surface-lighter hover:text-nox-text transition-colors"
+                                                    >
+                                                        {t('common.cancel')}
+                                                    </button>
+                                                    <button
+                                                        onClick={handleCreatePerson}
+                                                        disabled={!newFirstName.trim() || isCreating}
+                                                        className="
+                                                            flex-1 py-2 rounded-lg text-xs font-semibold
+                                                            bg-nox-orange hover:bg-nox-orange-dark text-white
+                                                            disabled:opacity-50 disabled:cursor-not-allowed
+                                                            transition-all
+                                                        "
+                                                    >
+                                                        {isCreating ? '...' : t('editor.create')}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                        <p className="text-[10px] text-nox-text-muted text-center opacity-70 pt-1">
+                                            {t('visualizer.canvas.orImportGedcom')}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Import Section */}
                             <div>
                                 <h2 className="text-xs font-semibold text-nox-text-muted uppercase tracking-wider mb-3">
                                     {t('visualizer.sidebar.import')}

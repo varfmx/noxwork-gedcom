@@ -79,7 +79,9 @@
       "uploadDrag": "Arrastra y suelta un archivo",
       "uploadDragSuffix": "al panel lateral.",
       "backToDashboard": "← Volver al Panel",
-      "clearCanvas": "✕ Limpiar Lienzo"
+      "clearCanvas": "✕ Limpiar Lienzo",
+      "emptyTreeHint": "Comienza a construir tu árbol genealógico creando la primera persona.",
+      "orImportGedcom": "O importa un archivo GEDCOM desde el panel lateral."
     },
     "uploader": {
       "dropHint": "Suelta el archivo .ged o haz clic para subir",
@@ -177,6 +179,17 @@
     "connectionTypeHint": "¿Qué tipo de relación es esta?",
     "parentChildDesc": "El origen es padre/madre del destino",
     "spouseDesc": "Pareja / matrimonio"
+  },
+  "contextMenu": {
+    "addChild": "Agregar Hijo/a",
+    "addSpouse": "Agregar Cónyuge",
+    "addParent": "Agregar Padre/Madre",
+    "delete": "Eliminar Persona"
+  },
+  "projectName": {
+    "rename": "Clic para renombrar",
+    "placeholder": "Nombre del proyecto",
+    "saved": "Proyecto renombrado"
   },
   "export": {
     "download": "Descargar",
