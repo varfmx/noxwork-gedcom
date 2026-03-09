@@ -307,13 +307,20 @@ All routes are declared in `App.tsx` using `<Routes>`:
 - [x] **i18n** — `contextMenu.*`, `projectName.*`, `visualizer.canvas.emptyTreeHint` keys in EN + ES
 - [x] **CSS animations** — `fadeInZoom` for context menu, `slideInFromRight` for edit panel
 
-### 🔲 Phase 9 — Interactivity & Polish
+### ✅ Phase 9 — UI Polish & Theme Support
+- [x] **Light Mode Support** — Persistent theme toggle (using `useThemeStore` + `localStorage`) with CSS variables (`:root.light`)
+- [x] **Smooth Transitions** — Background and text color transitions for theme switching
+- [x] **"Last Modified" Timestamp Fix** — Ensured `updatedAt` field in the database and project store is touched after any person or relationship change
+- [x] **React Flow Theme Sync** — Canvas background and built-in UI elements (controls/minimap) switch color modes automatically
+
+### 🔲 Phase 10 — Future Features
 - [ ] Search / filter individuals
 - [ ] Highlight kinship paths on hover
 - [ ] Zoom to selected individual
 - [ ] Responsive sidebar (collapsible on mobile)
+- [ ] Custom Domain Setup
 
-### 🔲 Phase 10 — Deployment
+### 🔲 Phase 11 — Deployment
 - [x] Vercel deploy configuration
 - [ ] Environment variable management for staging/production
 

@@ -348,15 +348,16 @@ The `GedcomEngine` currently supports GEDCOM 5.5/5.5.1 tags:
 - [x] Position storage in Person metadata JSON (`positionX`, `positionY`)
 - [x] `findOneForUser()` returns positions in API response
 
-### ✅ Phase 8 — Export Enhancements
+### ✅ Phase 8 — Export & Sync Enhancements
 - [x] GEDCOM 5.5.1 export
 - [x] PNG/PDF export of visualized trees (implemented client-side in `ExportService`)
+- [x] **Project Timestamp Fix** — Modified `ProjectService` to update the Tree's `updatedAt` field whenever a person or relationship is modified, ensuring the dashboard accurately reflects the last edit time.
 
 ### 🔲 Phase 9 — Deployment
 - [x] Backend: Railway.app (Node.js runtime)
-- [x] Database: Neon.tech (PostgreSQL Serverless)
-- [x] Frontend: Vercel
-- [ ] Domain: `gedcom.noxwork.net`
+- [x] Database: Supabase PostgreSQL + Prisma
+- [ ] CI/CD pipeline (GitHub Actions)
+- [ ] Environment variable validation for production
 
 ---
 
