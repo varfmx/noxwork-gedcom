@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { Node } from '@xyflow/react';
 import type { PersonNodeData } from '../../types/api';
 import { useTreeStore } from '../../store/useTreeStore';
+import { GedcomDatePicker } from '../../components/GedcomDatePicker';
 
 /* ─── Props ──────────────────────────────────────────────────── */
 
@@ -154,15 +155,9 @@ export function EditPersonPanel({ node, onClose }: EditPersonPanelProps) {
                     <label className="text-[10px] font-semibold text-nox-text-muted uppercase tracking-wider block mb-1.5">
                         {t('editor.birthDate')}
                     </label>
-                    <input
+                    <GedcomDatePicker
                         value={birthDate}
-                        onChange={(e) => setBirthDate(e.target.value)}
-                        className="
-                            w-full bg-nox-surface-light border border-nox-surface-lighter rounded-lg
-                            px-3 py-2 text-sm text-nox-text placeholder:text-nox-text-muted
-                            focus:outline-none focus:ring-2 focus:ring-nox-cobalt/40 focus:border-nox-cobalt
-                            transition-all
-                        "
+                        onChange={setBirthDate}
                         placeholder="e.g. 1 JAN 1980"
                     />
                 </div>

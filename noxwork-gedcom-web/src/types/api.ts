@@ -49,6 +49,8 @@ export interface ApiIndividual {
     familySpouseIds: string[];
     familyChildId: string | null;
     detectedRoles?: ApiDetectedRole[];
+    positionX?: number | null;
+    positionY?: number | null;
 }
 
 export interface ApiFamily {

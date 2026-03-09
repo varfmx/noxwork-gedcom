@@ -14,6 +14,7 @@ import type { AuthenticatedUser } from '../auth/interfaces';
 import type { CreatePersonDto } from './dto/create-person.dto';
 import type { UpdatePersonDto } from './dto/update-person.dto';
 import type { CreateRelationshipDto } from './dto/create-relationship.dto';
+import type { BatchUpdatePositionsDto } from './dto/batch-update-positions.dto';
 import type { GedcomIndividual, GedcomFamily } from '../gedcom/interfaces';
 
 // ─── Public response shapes ───────────────────────────────────────────────────
@@ -277,6 +278,8 @@ export class ProjectService {
                 deathPlace: (metadata['deathPlace'] as string) ?? null,
                 familySpouseIds: spouseFamIds,
                 familyChildId,
+                positionX: (metadata['positionX'] as number) ?? null,
+                positionY: (metadata['positionY'] as number) ?? null,
             };
         });
 
@@ -636,6 +639,57 @@ export class ProjectService {
         return relationship;
     }
 
+    // ── PATCH /projects/:id/positions ─────────────────────────────────────────
+
+    /**
+     * Batch-updates node positions within a project.
+     * Stores positionX/positionY inside each Person's metadata JSON field.
+     * IDs are resolved by both DB id and gedcomId.
+     */
+    async batchUpdatePositions(
+        userId: string,
+        projectId: string,
+        dto: BatchUpdatePositionsDto,
+    ) {
+        const tree = await this.prisma.tree.findFirst({
+            where: { id: projectId, userId },
+            select: { id: true },
+        });
+
+        if (!tree) {
+            throw new NotFoundException(`Project ${projectId} not found.`);
+        }
+
+        await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+            for (const update of dto.updates) {
+                // Resolve by id or gedcomId
+                const person = await tx.person.findFirst({
+                    where: {
+                        treeId: projectId,
+                        OR: [{ id: update.id }, { gedcomId: update.id }],
+                    },
+                });
+
+                if (!person) continue; // Skip unknown IDs silently
+
+                const currentMeta = (person.metadata as Record<string, unknown>) ?? {};
+                await tx.person.update({
+                    where: { id: person.id },
+                    data: {
+                        metadata: {
+                            ...currentMeta,
+                            positionX: update.positionX,
+                            positionY: update.positionY,
+                        },
+                    },
+                });
+            }
+        });
+
+        this.logger.log(
+            `Batch position update: ${dto.updates.length} nodes for project ${projectId}`,
+        );
+    }
 
     // ── Helper: Reconstruct GedcomFamily[] from relationships ──────────────────
 

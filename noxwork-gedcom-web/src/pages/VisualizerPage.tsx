@@ -28,6 +28,7 @@ export default function VisualizerPage() {
     const setActiveProject = useProjectStore((s) => s.setActiveProject);
 
     const createPerson = useTreeStore((s) => s.createPerson);
+    const applyLayout = useTreeStore((s) => s.applyLayout);
 
     const [showReimport, setShowReimport] = useState(false);
     const [showCreateForm, setShowCreateForm] = useState(false);
@@ -292,6 +293,25 @@ export default function VisualizerPage() {
                                         </div>
                                     </div>
                                 )}
+                            </div>
+
+                            {/* ── Auto Organize ── */}
+                            <div>
+                                <button
+                                    onClick={applyLayout}
+                                    className="
+                                        w-full py-2 rounded-xl text-xs font-medium
+                                        bg-nox-cobalt/10 border border-nox-cobalt/20
+                                        text-nox-cobalt-light hover:bg-nox-cobalt/20
+                                        transition-all duration-200
+                                        flex items-center justify-center gap-2
+                                    "
+                                >
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+                                    </svg>
+                                    {t('visualizer.sidebar.autoOrganize')}
+                                </button>
                             </div>
 
                             {/* Legend */}

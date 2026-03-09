@@ -4,3 +4,4 @@ export { UploadToProjectDto } from './upload-to-project.dto';
 export { CreatePersonDto } from './create-person.dto';
 export { UpdatePersonDto } from './update-person.dto';
 export { CreateRelationshipDto } from './create-relationship.dto';
+export { BatchUpdatePositionsDto } from './batch-update-positions.dto';

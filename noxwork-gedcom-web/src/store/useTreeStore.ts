@@ -68,10 +68,13 @@ const pendingPositionUpdates = new Map<string, {
 const flushPositionUpdates = debounce(async () => {
     if (pendingPositionUpdates.size === 0) return;
 
+    const projectId = useTreeStore.getState().activeProjectId;
+    if (!projectId) return;
+
     const updatesToProcess = Array.from(pendingPositionUpdates.entries()).map(([id, data]) => ({
         id,
-        position: data.position,
-        lastUpdatedAt: data.lastUpdatedAt,
+        positionX: data.position.x,
+        positionY: data.position.y,
     }));
 
     const snapshots = Array.from(pendingPositionUpdates.values()).map(data => data.snapshot);
@@ -80,9 +83,9 @@ const flushPositionUpdates = debounce(async () => {
     pendingPositionUpdates.clear();
 
     try {
-        const res = await fetch(`${API_BASE}/nodes/batch`, {
+        const res = await fetch(`${API_BASE}/projects/${projectId}/positions`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
+            headers: await authHeaders(),
             body: JSON.stringify({ updates: updatesToProcess }),
         });
 
@@ -135,10 +138,17 @@ interface TreeState {
 function mapIndividualsToNodes(
     individuals: ApiIndividual[],
 ): Node<PersonNodeData>[] {
+    // Check if any positions are saved
+    const hasPositions = individuals.some(
+        (p) => p.positionX != null && p.positionY != null,
+    );
+
     return individuals.map((person) => ({
         id: person.id,
         type: 'person',
-        position: { x: 0, y: 0 }, // Will be set by applyLayout()
+        position: hasPositions && person.positionX != null && person.positionY != null
+            ? { x: person.positionX, y: person.positionY }
+            : { x: 0, y: 0 }, // Will be set by applyLayout()
         data: {
             label: person.fullName,
             fullName: person.fullName,
@@ -515,6 +525,11 @@ export const useTreeStore = create<TreeState>((set, get) => ({
             const nodes = mapIndividualsToNodes(individuals);
             const edges = mapFamiliesToEdges(families, individuals);
 
+            // Check if saved positions exist
+            const hasPositions = individuals.some(
+                (p) => p.positionX != null && p.positionY != null,
+            );
+
             set({
                 nodes,
                 edges,
@@ -528,7 +543,10 @@ export const useTreeStore = create<TreeState>((set, get) => ({
                 error: null,
             });
 
-            get().applyLayout();
+            // Only auto-layout when no saved positions exist
+            if (!hasPositions) {
+                get().applyLayout();
+            }
         } catch (err) {
             set({
                 isHydrating: false,

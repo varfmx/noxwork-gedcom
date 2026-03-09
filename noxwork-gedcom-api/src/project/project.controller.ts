@@ -23,6 +23,7 @@ import { UploadToProjectDto } from './dto/upload-to-project.dto';
 import { CreatePersonDto } from './dto/create-person.dto';
 import { UpdatePersonDto } from './dto/update-person.dto';
 import { CreateRelationshipDto } from './dto/create-relationship.dto';
+import { BatchUpdatePositionsDto } from './dto/batch-update-positions.dto';
 
 /**
  * ProjectController — REST endpoints for genealogy project management.
@@ -301,5 +302,24 @@ export class ProjectController {
             success: true,
             data: relationship,
         };
+    }
+
+    // ── Position Persistence ─────────────────────────────────────────────────
+
+    /**
+     * PATCH /api/projects/:id/positions
+     *
+     * Batch-updates node positions for the project. Called with a debounced
+     * flush after the user drags nodes or triggers auto-layout.
+     * Body: { updates: [{ id: string, positionX: number, positionY: number }] }
+     */
+    @Patch(':id/positions')
+    @HttpCode(HttpStatus.NO_CONTENT)
+    async batchUpdatePositions(
+        @GetUser('id') userId: string,
+        @Param('id') projectId: string,
+        @Body() dto: BatchUpdatePositionsDto,
+    ): Promise<void> {
+        await this.projectService.batchUpdatePositions(userId, projectId, dto);
     }
 }

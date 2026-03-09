@@ -61,7 +61,8 @@
       "projectActive": "Project active",
       "treeStats": "Tree Statistics",
       "genderBreakdown": "Gender Breakdown",
-      "reimport": "Re-import GEDCOM"
+      "reimport": "Re-import GEDCOM",
+      "autoOrganize": "Auto Organize"
     },
     "legend": {
       "male": "Male",
