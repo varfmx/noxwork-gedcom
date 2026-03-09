@@ -11,6 +11,7 @@ import { LanguageSwitcher } from '../components/LanguageSwitcher';
 import { ProjectTable } from '../features/dashboard/ProjectTable';
 import { EmptyState } from '../features/dashboard/EmptyState';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { useThemeStore } from '../store/useThemeStore';
 
 /* ─── Create Project Modal ────────────────────────────────────── */
 
@@ -131,6 +132,7 @@ export default function Dashboard() {
     const { user, session, signOut, resendConfirmation } = useAuthStore();
     const { projects, isLoading, error, fetchProjects, clearError } = useProjectStore();
     const { profile, isLoadingProfile, fetchProfile } = useUserStore();
+    const { mode } = useThemeStore();
     const { addToast } = useToast();
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -175,20 +177,28 @@ export default function Dashboard() {
             {/* ── Top Nav ── */}
             <header className="sticky top-0 z-30 bg-nox-surface/90 backdrop-blur-md border-b border-nox-surface-lighter">
                 <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between gap-4">
-                    {/* Logo */}
-                    <button
-                        onClick={() => navigate('/dashboard')}
-                        className="flex items-center gap-2.5 flex-shrink-0"
-                    >
-                        <img
-                            src="/noxwork_logo_white.png"
-                            alt="Noxwork"
-                            className="h-7 w-auto object-contain"
-                        />
-                        <span className="text-sm font-bold text-nox-text tracking-tight hidden sm:block">
+                    {/* Logo Section */}
+                    <div className="flex items-center gap-2.5 flex-shrink-0">
+                        <a
+                            href="https://www.noxwork.net"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title={t('common.logoTooltip')}
+                            className="transition-opacity hover:opacity-80"
+                        >
+                            <img
+                                src={mode === 'light' ? '/noxwork_logo_blue.png' : '/noxwork_logo_white.png'}
+                                alt="Noxwork"
+                                className="h-7 w-auto object-contain"
+                            />
+                        </a>
+                        <button
+                            onClick={() => navigate('/dashboard')}
+                            className="text-sm font-bold text-nox-text tracking-tight hidden sm:block hover:text-nox-cobalt-light transition-colors"
+                        >
                             Noxwork GEDCOM
-                        </span>
-                    </button>
+                        </button>
+                    </div>
 
                     {/* Search */}
                     <div className="flex-1 max-w-xs relative">

@@ -7,7 +7,8 @@
     "error": "Error",
     "optional": "(opcional)",
     "themeToggleLight": "Cambiar a modo claro",
-    "themeToggleDark": "Cambiar a modo oscuro"
+    "themeToggleDark": "Cambiar a modo oscuro",
+    "logoTooltip": "Noxwork es un nombre comercial de Fernando Valderrábano Reyes"
   },
   "dashboard": {
     "greetingPrefix": "Bienvenido de nuevo,",

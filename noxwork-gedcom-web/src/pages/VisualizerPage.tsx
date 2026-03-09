@@ -5,6 +5,7 @@ import { TreeCanvas } from '../features/visualizer/TreeCanvas';
 import { FileUploader } from '../features/uploader/FileUploader';
 import { useTreeStore } from '../store/useTreeStore';
 import { useProjectStore } from '../store/useProjectStore';
+import { useThemeStore } from '../store/useThemeStore';
 import { ThemeToggle } from '../components/ThemeToggle';
 
 /**
@@ -19,6 +20,7 @@ export default function VisualizerPage() {
     const { t } = useTranslation();
     const { projectId: routeProjectId } = useParams<{ projectId: string }>();
     const nodes = useTreeStore((s) => s.nodes);
+    const { mode } = useThemeStore();
     const sessionId = useTreeStore((s) => s.sessionId);
     const isHydrating = useTreeStore((s) => s.isHydrating);
     const stats = useTreeStore((s) => s.stats);
@@ -113,11 +115,19 @@ export default function VisualizerPage() {
                 <div className="px-4 py-4 border-b border-nox-surface-lighter">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2.5">
-                            <img
-                                src="/noxwork_logo_white.png"
-                                alt="Noxwork"
-                                className="h-7 w-auto object-contain flex-shrink-0"
-                            />
+                            <a
+                                href="https://www.noxwork.net"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title={t('common.logoTooltip')}
+                                className="transition-opacity hover:opacity-80 flex-shrink-0"
+                            >
+                                <img
+                                    src={mode === 'light' ? '/noxwork_logo_blue.png' : '/noxwork_logo_white.png'}
+                                    alt="Noxwork"
+                                    className="h-7 w-auto object-contain"
+                                />
+                            </a>
                             <div>
                                 <h1 className="text-sm font-bold text-nox-text tracking-tight">
                                     Noxwork GEDCOM
