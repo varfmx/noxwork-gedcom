@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/useAuthStore';
 import { useToast } from '../components/Toast';
@@ -18,10 +18,17 @@ type AuthMode = 'sign-in' | 'sign-up';
  *  - Resend confirmation email (for unconfirmed accounts)
  */
 export default function LoginPage() {
-    const { signInWithGoogle, signInWithEmail, signUpWithEmail, resendConfirmation, isLoading } =
+    const { user, signInWithGoogle, signInWithEmail, signUpWithEmail, resendConfirmation, isLoading } =
         useAuthStore();
     const { addToast } = useToast();
     const { t } = useTranslation();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (user && !isLoading) {
+            navigate('/dashboard', { replace: true });
+        }
+    }, [user, isLoading, navigate]);
 
     const [mode, setMode] = useState<AuthMode>('sign-in');
     const [email, setEmail] = useState('');
@@ -43,6 +50,8 @@ export default function LoginPage() {
             const result = await signInWithEmail(email.trim().toLowerCase(), password);
             if (result.error) {
                 addToast(result.error, 'error');
+            } else {
+                navigate('/dashboard', { replace: true });
             }
         } else {
             const result = await signUpWithEmail(email.trim().toLowerCase(), password, firstName, lastName);
@@ -116,8 +125,8 @@ export default function LoginPage() {
                                 Noxwork GEDCOM
                             </h1>
                             <p className="text-xs text-nox-text-muted mt-0.5">
-                                    {t('auth.subtitle')}
-                                </p>
+                                {t('auth.subtitle')}
+                            </p>
                         </div>
                     </div>
 

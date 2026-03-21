@@ -9,13 +9,13 @@
 ```text
 noxwork-gedcom/
 ├── noxwork-gedcom-api/      # Backend — NestJS REST API
-└── noxwork-gedcom-web/      # Frontend — React + React Flow
+└── noxwork-gedcom-web/      # Frontend — React
 ```
 
 | Package | Tech | Status |
 |---------|------|--------|
 | **noxwork-gedcom-api** | NestJS 11 · TypeScript · Prisma · PostgreSQL | Active |
-| **noxwork-gedcom-web** | React 19 · Vite · React Flow · Tailwind CSS v4 · Zustand | Active |
+| **noxwork-gedcom-web** | React 19 · Vite · Tailwind CSS v4 · Zustand | Active |
 
 ---
 
@@ -85,7 +85,7 @@ The frontend dashboard for visualizing and editing GEDCOM family trees as intera
 
 ### Key Features
 
-- **React Flow Canvas** — Interactive, zoomable graph with background grid, minimap, and controls.
+- **Canvas** — Interactive, zoomable graph with background grid, minimap, and controls.
 - **PersonNode** — Custom node with gender-colored border, birth/death dates, location, and multi-role badge for pedigree collapse cases.
 - **Dagre Layout** — Automatic hierarchical positioning (top-to-bottom) with spouse alignment.
 - **Auto Organize** — One-click dagre layout button that rearranges all nodes and saves positions.
@@ -159,12 +159,10 @@ npm run dev                  # http://localhost:5173 (proxies /api → :3000)
 
 ## Roadmap
 
-### ✅ Completed
-
 - [x] GEDCOM parser engine (INDI, FAM, HEAD tags)
 - [x] REST API for file upload and session retrieval
 - [x] Graph-based relationship resolver (BFS, multi-path, multi-role)
-- [x] React frontend with React Flow visualization
+- [x] React frontend with canvas visualization
 - [x] Layout engine (Dagre) for automatic node positioning with spouse alignment
 - [x] Supabase Auth: Google SSO + Email/Password login + registration
 - [x] Password recovery flow (forgot password, update password)
@@ -188,7 +186,7 @@ npm run dev                  # http://localhost:5173 (proxies /api → :3000)
 - [x] Clear Canvas (batch delete all persons, keep project context)
 - [x] Create persons without importing GEDCOM
 
-### 🔲 In Progress / Planned
+### Planned
 
 - [ ] Search / filter individuals on the canvas
 - [ ] Highlight kinship paths on hover
@@ -218,7 +216,7 @@ npm run dev                  # http://localhost:5173 (proxies /api → :3000)
 | Layer | Technology |
 |-------|-----------|
 | **Backend** | NestJS 11 · TypeScript 5.7 · Prisma ORM · Node.js |
-| **Frontend** | React 19 · Vite 7 · React Flow v12 · Tailwind CSS v4 · Zustand 5 · Dagre |
+| **Frontend** | React 19 · Vite 7 · Tailwind CSS v4 · Zustand 5 · Dagre |
 | **Database** | PostgreSQL 16+ · Prisma ORM · Neon.tech |
 | **Auth** | Supabase Auth (Google SSO + Email/Password) |
 | **Hosting** | Railway (backend) · Vercel (frontend) · Neon (DB) |
