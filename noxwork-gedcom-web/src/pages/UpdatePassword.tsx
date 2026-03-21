@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/useAuthStore';
 import { useToast } from '../components/Toast';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { useThemeStore } from '../store/useThemeStore';
 
 /* ─── Validation ─────────────────────────────────────────────── */
 
@@ -53,6 +54,7 @@ export default function UpdatePassword() {
     const { updatePassword } = useAuthStore();
     const { addToast } = useToast();
     const { t } = useTranslation();
+    const { mode } = useThemeStore();
 
     const [sessionReady, setSessionReady] = useState(false);
     const [password, setPassword] = useState('');
@@ -151,8 +153,8 @@ export default function UpdatePassword() {
                     {/* Logo + Header */}
                     <div className="flex flex-col items-center gap-4 mb-8">
                         <img
-                            src="/noxwork_logo_white.png"
-                            alt="Noxwork"
+                            src={mode === 'light' ? '/radixflow_blue.png' : '/radixflow_white.png'}
+                            alt="RadixFlow"
                             className="h-14 w-auto object-contain drop-shadow-lg"
                         />
                         <div className="text-center">

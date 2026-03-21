@@ -54,7 +54,9 @@
       "resending": "Sending…"
     },
     "deleteConfirm": "Delete \"{{name}}\"? This cannot be undone.",
-    "footer": "© 2026 Noxwork Technologies — Engineering Innovation Labs"
+    "footerPrefix": "© 2026 ",
+    "footerLink": "Noxwork",
+    "footerSuffix": " Technologies — Engineering Innovation Labs"
   },
   "visualizer": {
     "sidebar": {

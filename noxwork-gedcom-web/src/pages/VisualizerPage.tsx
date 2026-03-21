@@ -123,19 +123,11 @@ export default function VisualizerPage() {
                                 className="transition-opacity hover:opacity-80 flex-shrink-0"
                             >
                                 <img
-                                    src={mode === 'light' ? '/noxwork_logo_blue.png' : '/noxwork_logo_white.png'}
-                                    alt="Noxwork"
+                                    src={mode === 'light' ? '/radixflow_blue.png' : '/radixflow_white.png'}
+                                    alt="RadixFlow"
                                     className="h-7 w-auto object-contain"
                                 />
                             </a>
-                            <div>
-                                <h1 className="text-sm font-bold text-nox-text tracking-tight">
-                                    Noxwork GEDCOM
-                                </h1>
-                                <p className="text-[10px] text-nox-text-muted">
-                                    {t('visualizer.sidebar.subtitle')}
-                                </p>
-                            </div>
                         </div>
 
                         {/* Back to dashboard */}

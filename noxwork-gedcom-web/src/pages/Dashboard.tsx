@@ -1,5 +1,4 @@
 import { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/useAuthStore';
 import { useProjectStore } from '../store/useProjectStore';
@@ -127,7 +126,6 @@ function CreateProjectModal({ onClose }: CreateModalProps) {
 /* ─── Dashboard ───────────────────────────────────────────────── */
 
 export default function Dashboard() {
-    const navigate = useNavigate();
     const { t } = useTranslation();
     const { user, session, signOut, resendConfirmation } = useAuthStore();
     const { projects, isLoading, error, fetchProjects, clearError } = useProjectStore();
@@ -187,17 +185,11 @@ export default function Dashboard() {
                             className="transition-opacity hover:opacity-80"
                         >
                             <img
-                                src={mode === 'light' ? '/noxwork_logo_blue.png' : '/noxwork_logo_white.png'}
-                                alt="Noxwork"
+                                src={mode === 'light' ? '/radixflow_blue.png' : '/radixflow_white.png'}
+                                alt="RadixFlow"
                                 className="h-7 w-auto object-contain"
                             />
                         </a>
-                        <button
-                            onClick={() => navigate('/dashboard')}
-                            className="text-sm font-bold text-nox-text tracking-tight hidden sm:block hover:text-nox-cobalt-light transition-colors"
-                        >
-                            Noxwork GEDCOM
-                        </button>
                     </div>
 
                     {/* Search */}
@@ -388,7 +380,16 @@ export default function Dashboard() {
             {/* ── Footer ── */}
             <footer className="border-t border-nox-surface-lighter py-4 px-6">
                 <p className="text-center text-[11px] text-nox-text-muted">
-                    {t('dashboard.footer')}
+                    {t('dashboard.footerPrefix')}
+                    <a
+                        href="https://www.noxwork.net"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-nox-cobalt-light hover:underline transition-colors"
+                    >
+                        {t('dashboard.footerLink')}
+                    </a>
+                    {t('dashboard.footerSuffix')}
                 </p>
             </footer>
 

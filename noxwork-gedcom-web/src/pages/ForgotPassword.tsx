@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/useAuthStore';
 import { useToast } from '../components/Toast';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { useThemeStore } from '../store/useThemeStore';
 
 /**
  * ForgotPassword — Sends a password reset email via Supabase Auth.
@@ -16,6 +17,7 @@ export default function ForgotPassword() {
     const { resetPasswordForEmail } = useAuthStore();
     const { addToast } = useToast();
     const { t } = useTranslation();
+    const { mode } = useThemeStore();
     const [email, setEmail] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [sent, setSent] = useState(false);
@@ -61,8 +63,8 @@ export default function ForgotPassword() {
                     {/* Logo */}
                     <div className="flex flex-col items-center gap-4 mb-8">
                         <img
-                            src="/noxwork_logo_white.png"
-                            alt="Noxwork"
+                            src={mode === 'light' ? '/radixflow_blue.png' : '/radixflow_white.png'}
+                            alt="RadixFlow"
                             className="h-14 w-auto object-contain drop-shadow-lg"
                         />
                         <div className="text-center">

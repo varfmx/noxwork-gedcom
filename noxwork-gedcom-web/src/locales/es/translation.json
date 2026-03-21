@@ -54,7 +54,9 @@
       "resending": "Enviando…"
     },
     "deleteConfirm": "¿Eliminar \"{{name}}\"? Esta acción no se puede deshacer.",
-    "footer": "© 2026 Noxwork Technologies — Laboratorio de Innovación en Ingeniería"
+    "footerPrefix": "© 2026 ",
+    "footerLink": "Noxwork",
+    "footerSuffix": " Technologies — Laboratorio de Innovación en Ingeniería"
   },
   "visualizer": {
     "sidebar": {

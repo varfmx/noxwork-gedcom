@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../store/useAuthStore';
 import { useToast } from '../components/Toast';
 import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { useThemeStore } from '../store/useThemeStore';
 
 /* ─── Auth mode ──────────────────────────────────────────────── */
 
@@ -23,6 +24,7 @@ export default function LoginPage() {
     const { addToast } = useToast();
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const { mode: themeMode } = useThemeStore();
 
     useEffect(() => {
         if (user && !isLoading) {
@@ -116,18 +118,10 @@ export default function LoginPage() {
                     {/* Logo */}
                     <div className="flex flex-col items-center gap-4 mb-6">
                         <img
-                            src="/noxwork_logo_white.png"
-                            alt="Noxwork"
+                            src={themeMode === 'light' ? '/radixflow_blue.png' : '/radixflow_white.png'}
+                            alt="RadixFlow"
                             className="h-14 w-auto object-contain drop-shadow-lg"
                         />
-                        <div className="text-center">
-                            <h1 className="text-xl font-bold text-nox-text tracking-tight">
-                                Noxwork GEDCOM
-                            </h1>
-                            <p className="text-xs text-nox-text-muted mt-0.5">
-                                {t('auth.subtitle')}
-                            </p>
-                        </div>
                     </div>
 
                     {/* Mode tabs */}
