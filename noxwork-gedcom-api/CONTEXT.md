@@ -9,7 +9,7 @@
 
 ## 1. Project Overview
 
-`noxwork-gedcom-api` is the **backend** of the Noxwork GEDCOM Labs platform. It is part of a **monorepo** located at `noxwork-gedcom/` alongside the frontend (`noxwork-gedcom-web`).
+`noxwork-gedcom-api` is the **backend** of the Noxwork RADIX FLOW platform. It is part of a **monorepo** located at `noxwork-gedcom/` alongside the frontend (`noxwork-gedcom-web`).
 
 The API is responsible for:
 - Receiving and parsing `.ged` (GEDCOM) genealogy files

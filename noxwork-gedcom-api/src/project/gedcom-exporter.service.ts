@@ -74,7 +74,7 @@ interface FamRecord {
 export class GedcomExporterService {
     private readonly logger = new Logger(GedcomExporterService.name);
 
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(private readonly prisma: PrismaService) { }
 
     // ── Public API ────────────────────────────────────────────────────────────
 
@@ -109,7 +109,7 @@ export class GedcomExporterService {
 
         this.logger.log(
             `Exporting tree id=${treeId} (${tree.persons.length} persons, ` +
-                `${tree.relationships.length} relationships)`,
+            `${tree.relationships.length} relationships)`,
         );
 
         // 2. Build a stable GEDCOM ID for every person
@@ -424,7 +424,7 @@ export class GedcomExporterService {
             '2 FORM LINEAGE-LINKED',
             '1 CHAR UTF-8',
             `1 FILE ${treeName}.ged`,
-            `1 NOTE Exported from Noxwork GEDCOM platform`,
+            `1 NOTE Exported from Noxwork RADIX FLOW platform`,
         ];
     }
 

@@ -9,7 +9,7 @@
 
 ## 1. Project Overview
 
-`noxwork-gedcom-web` is the **frontend** of the Noxwork GEDCOM Labs platform. It is part of a **monorepo** located at `noxwork-gedcom/` alongside the backend (`noxwork-gedcom-api`).
+`noxwork-gedcom-web` is the **frontend** of the Noxwork RADIX FLOW platform. It is part of a **monorepo** located at `noxwork-gedcom/` alongside the backend (`noxwork-gedcom-api`).
 
 The frontend is responsible for:
 - **Auth:** Google SSO + Email/Password via Supabase Auth; JWT passed as `Authorization: Bearer` to backend; full password-recovery flow (forgot password, update password, resend confirmation)

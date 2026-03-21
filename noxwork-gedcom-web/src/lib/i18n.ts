@@ -1,5 +1,5 @@
 /**
- * i18n.ts — Noxwork GEDCOM internationalization configuration.
+ * i18n.ts — Noxwork RADIX FLOW internationalization configuration.
  *
  * Languages supported:  English ("en") · Spanish ("es")
  * Persistence:          LanguageDetector reads from localStorage key "noxwork_lang",
