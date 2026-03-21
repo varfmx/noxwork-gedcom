@@ -125,7 +125,7 @@ export default function VisualizerPage() {
                                 <img
                                     src={mode === 'light' ? '/radixflow_blue.png' : '/radixflow_white.png'}
                                     alt="RadixFlow"
-                                    className="h-7 w-auto object-contain"
+                                    className="h-14 w-auto object-contain"
                                 />
                             </a>
                         </div>

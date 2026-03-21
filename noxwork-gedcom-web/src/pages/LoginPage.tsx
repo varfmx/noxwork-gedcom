@@ -120,7 +120,7 @@ export default function LoginPage() {
                         <img
                             src={themeMode === 'light' ? '/radixflow_blue.png' : '/radixflow_white.png'}
                             alt="RadixFlow"
-                            className="h-14 w-auto object-contain drop-shadow-lg"
+                            className="h-18 w-auto object-contain drop-shadow-lg"
                         />
                     </div>
 
