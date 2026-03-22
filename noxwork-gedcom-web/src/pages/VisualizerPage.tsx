@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { TreeCanvas } from '../features/visualizer/TreeCanvas';
+import { FanChartCanvas } from '../features/visualizer/FanChartCanvas';
 import { FileUploader } from '../features/uploader/FileUploader';
 import { useTreeStore } from '../store/useTreeStore';
 import { useProjectStore } from '../store/useProjectStore';
@@ -34,6 +35,8 @@ export default function VisualizerPage() {
     const createPerson = useTreeStore((s) => s.createPerson);
     const applyLayout = useTreeStore((s) => s.applyLayout);
     const clearCanvas = useTreeStore((s) => s.clearCanvas);
+
+    const [viewMode, setViewMode] = useState<'hierarchical' | 'fanchart'>('hierarchical');
 
     const [showReimport, setShowReimport] = useState(false);
     const [showCreateForm, setShowCreateForm] = useState(false);
@@ -143,10 +146,44 @@ export default function VisualizerPage() {
                                 "
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
                                 </svg>
                             </button>
                         </div>
+                    </div>
+
+                    {/* ── View Switcher ── */}
+                    <div className="mt-4 flex p-1 bg-nox-surface-light border border-nox-surface-lighter rounded-xl">
+                        <button
+                            onClick={() => setViewMode('hierarchical')}
+                            className={`
+                                flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all
+                                ${viewMode === 'hierarchical'
+                                    ? 'bg-nox-cobalt text-white shadow-lg shadow-nox-cobalt/20'
+                                    : 'text-nox-text-muted hover:text-nox-text'
+                                }
+                            `}
+                        >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+                            </svg>
+                            Standard
+                        </button>
+                        <button
+                            onClick={() => setViewMode('fanchart')}
+                            className={`
+                                flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all
+                                ${viewMode === 'fanchart'
+                                    ? 'bg-nox-orange text-white shadow-lg shadow-nox-orange/20'
+                                    : 'text-nox-text-muted hover:text-nox-text'
+                                }
+                            `}
+                        >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                            </svg>
+                            Fan Chart
+                        </button>
                     </div>
 
                     {/* Active project indicator — now editable */}
@@ -630,7 +667,11 @@ export default function VisualizerPage() {
                         </div>
                     </div>
                 ) : sessionId ? (
-                    <TreeCanvas projectName={activeProject?.name} />
+                    viewMode === 'fanchart' ? (
+                        <FanChartCanvas projectName={activeProject?.name} />
+                    ) : (
+                        <TreeCanvas projectName={activeProject?.name} />
+                    )
                 ) : (
                     <div className="absolute inset-0 flex items-center justify-center">
                         <div className="text-center space-y-4 max-w-md">
