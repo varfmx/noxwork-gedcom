@@ -65,7 +65,7 @@ export default function ForgotPassword() {
                         <img
                             src={mode === 'light' ? '/radixflow_blue.png' : '/radixflow_white.png'}
                             alt="RadixFlow"
-                            className="h-20 w-auto object-contain drop-shadow-lg"
+                            className="h-28 w-auto object-contain drop-shadow-lg"
                         />
                         <div className="text-center">
                             <h1 className="text-xl font-bold text-nox-text tracking-tight">

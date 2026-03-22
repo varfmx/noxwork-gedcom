@@ -17,7 +17,7 @@ export interface SendForgotPasswordEmailOptions {
 // ─── Shared HTML template helpers ─────────────────────────────────────────────
 
 const LOGO_URL =
-  'https://www.radixflow.app/radixflow_blue.png';
+  'https://www.radixflow.app/radixflow_white.png';
 
 /**
  * Generates the outer shell (head + header) shared by all email templates.
@@ -55,7 +55,7 @@ function emailShell(title: string, bodyContent: string): string {
       text-align: center;
     }
     .header img {
-      height: 40px;
+      height: 76px;
       width: auto;
     }
     /* ── Body ── */
