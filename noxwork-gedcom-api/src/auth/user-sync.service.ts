@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 import type { JwtPayload } from './interfaces';
 
 /**
@@ -51,12 +52,19 @@ function extractName(metadata: Record<string, unknown>): {
  * Called once per request (inside the JWT strategy's `validate()` method)
  * immediately after the token is verified. Uses `upsert` so the operation
  * is idempotent and safe under concurrent requests.
+ *
+ * On the very first sync (i.e., when the user row is newly created) a Welcome
+ * email is dispatched via MailService. The email call is fire-and-forget — if
+ * it fails, only a log entry is written and the request continues normally.
  */
 @Injectable()
 export class UserSyncService {
     private readonly logger = new Logger(UserSyncService.name);
 
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly mail: MailService,
+    ) {}
 
     /**
      * Creates or updates the Prisma User row for the given Supabase JWT payload.
@@ -68,13 +76,16 @@ export class UserSyncService {
      * The `firstName` / `lastName` are only updated when the extracted values
      * are non-null, so a user who previously set their name manually won't
      * have it wiped if metadata is temporarily absent.
+     *
+     * A Welcome email is sent when the user is created for the first time
+     * (covers both Google SSO first-login and manual signup).
      */
     async syncUser(payload: JwtPayload): Promise<void> {
         const metadata = (payload.user_metadata as Record<string, unknown>) ?? {};
         const { firstName, lastName } = extractName(metadata);
 
         try {
-            await this.prisma.user.upsert({
+            const result = await this.prisma.user.upsert({
                 where: { id: payload.sub },
                 create: {
                     id: payload.sub,
@@ -88,7 +99,33 @@ export class UserSyncService {
                     ...(firstName !== null && { firstName }),
                     ...(lastName !== null && { lastName }),
                 },
+                // We select createdAt + updatedAt to detect whether this was
+                // a fresh INSERT vs. an UPDATE — used to trigger Welcome email once.
+                select: {
+                    createdAt: true,
+                    updatedAt: true,
+                    email: true,
+                    firstName: true,
+                },
             });
+
+            // Heuristic: if createdAt and updatedAt are equal (within 1 s)
+            // the record was just INSERTed — send the Welcome email.
+            const isNewUser =
+                Math.abs(
+                    result.createdAt.getTime() - result.updatedAt.getTime(),
+                ) < 1000;
+
+            if (isNewUser) {
+                this.logger.log(
+                    `[UserSyncService] New user detected: ${result.email} — sending welcome email.`,
+                );
+                // Fire-and-forget: MailService handles its own errors internally.
+                void this.mail.sendWelcomeEmail({
+                    to: result.email,
+                    firstName: result.firstName,
+                });
+            }
         } catch (err) {
             // Log but never block the request — a sync failure must not
             // turn a valid JWT into a 500 or 401.

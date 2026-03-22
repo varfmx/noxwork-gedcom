@@ -3,6 +3,7 @@ import { PassportModule } from '@nestjs/passport';
 import { SupabaseJwtStrategy } from './supabase-jwt.strategy';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { UserSyncService } from './user-sync.service';
+import { MailModule } from '../mail/mail.module';
 
 /**
  * AuthModule — Registers the Supabase JWT Passport strategy globally.
@@ -13,10 +14,15 @@ import { UserSyncService } from './user-sync.service';
  *
  * UserSyncService is provided here so the strategy can upsert Prisma User
  * rows on every valid JWT. PrismaService is available globally via PrismaModule.
+ * MailModule is imported so UserSyncService can send Welcome emails on first login.
  */
 @Module({
-    imports: [PassportModule.register({ defaultStrategy: 'supabase-jwt' })],
+    imports: [
+        PassportModule.register({ defaultStrategy: 'supabase-jwt' }),
+        MailModule,
+    ],
     providers: [SupabaseJwtStrategy, JwtAuthGuard, UserSyncService],
     exports: [JwtAuthGuard, PassportModule, UserSyncService],
 })
 export class AuthModule {}
+
