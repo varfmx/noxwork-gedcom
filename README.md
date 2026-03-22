@@ -195,22 +195,6 @@ npm run dev                  # http://localhost:5173 (proxies /api → :3000)
 
 ---
 
-## Deployment
-
-| Service | Platform | URL |
-|---------|----------|-----|
-| **API** | Railway | [`noxwork-gedcom-production.up.railway.app`](https://noxwork-gedcom-production.up.railway.app/api) |
-| **Frontend** | Vercel | [`noxwork-gedcom.vercel.app`](https://noxwork-gedcom.vercel.app) |
-| **Database** | Neon.tech | *Active (PostgreSQL via Prisma)* |
-
-### Infrastructure Notes
-
-- The API binds to `0.0.0.0` for Railway compatibility.
-- A `vercel.json` rewrite proxies `/api/*` from Vercel to the Railway backend.
-- CORS is configured via the `CORS_ORIGIN` environment variable.
-
----
-
 ## Tech Stack
 
 | Layer | Technology |

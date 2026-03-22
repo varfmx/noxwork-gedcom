@@ -17,7 +17,7 @@ export interface SendForgotPasswordEmailOptions {
 // ─── Shared HTML template helpers ─────────────────────────────────────────────
 
 const LOGO_URL =
-  'https://noxwork-gedcom.vercel.app/radixflow_blue.png';
+  'https://www.radixflow.app/radixflow_blue.png';
 
 /**
  * Generates the outer shell (head + header) shared by all email templates.
