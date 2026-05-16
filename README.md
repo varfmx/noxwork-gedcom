@@ -177,7 +177,7 @@ npm run dev                  # http://localhost:5173 (proxies /api → :3000)
 - [x] Position persistence (drag-save + restore on load)
 - [x] Auto Organize button (dagre re-layout + batch save)
 - [x] GEDCOM date picker (day/month/year → `D MMM YYYY`)
-- [x] Backend deployment (Railway)
+- [x] Backend deployment (Vercel)
 - [x] Frontend deployment (Vercel)
 - [x] Export tree as PNG/PDF with project name title
 - [x] Right-click context menu (add child/spouse/parent, delete)
@@ -191,7 +191,7 @@ npm run dev                  # http://localhost:5173 (proxies /api → :3000)
 - [ ] Search / filter individuals on the canvas
 - [ ] Highlight kinship paths on hover
 - [ ] Responsive sidebar (collapsible on mobile)
-- [ ] Custom domain (`gedcom.noxwork.net`)
+- [x] Custom domain (`radixflow.app`)
 
 ---
 
@@ -203,7 +203,7 @@ npm run dev                  # http://localhost:5173 (proxies /api → :3000)
 | **Frontend** | React 19 · Vite 7 · Tailwind CSS v4 · Zustand 5 · Dagre |
 | **Database** | PostgreSQL 16+ · Prisma ORM · Neon.tech |
 | **Auth** | Supabase Auth (Google SSO + Email/Password) |
-| **Hosting** | Railway (backend) · Vercel (frontend) · Neon (DB) |
+| **Hosting** | Vercel (backend + frontend) · Neon (DB) |
 
 ---
 
