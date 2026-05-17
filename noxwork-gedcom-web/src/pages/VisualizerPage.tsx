@@ -8,6 +8,7 @@ import { useTreeStore } from '../store/useTreeStore';
 import { useProjectStore } from '../store/useProjectStore';
 import { useThemeStore } from '../store/useThemeStore';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
 
 /**
  * VisualizerPage — The interactive family tree canvas.
@@ -133,8 +134,9 @@ export default function VisualizerPage() {
                             </a>
                         </div>
 
-                        {/* Back to dashboard */}
+                        {/* Controls */}
                         <div className="flex items-center gap-1">
+                            <LanguageSwitcher />
                             <ThemeToggle />
                             <button
                                 onClick={handleBackToDashboard}
@@ -146,6 +148,7 @@ export default function VisualizerPage() {
                                 "
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
                                 </svg>
                             </button>
                         </div>
