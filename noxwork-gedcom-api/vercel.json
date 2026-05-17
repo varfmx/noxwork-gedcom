@@ -1,16 +1,14 @@
 {
   "version": 2,
   "buildCommand": "npm run prisma:generate && npm run build && npx prisma migrate deploy",
-  "builds": [
-    {
-      "src": "dist/serverless.js",
-      "use": "@vercel/node"
+  "functions": {
+    "api/index.js": {
+      "memory": 1024,
+      "maxDuration": 60,
+      "includeFiles": "dist/**"
     }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "dist/serverless.js"
-    }
+  },
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/api/index" }
   ]
 }
