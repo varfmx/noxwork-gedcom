@@ -78,12 +78,12 @@ Feature modules under `src/`:
 
 **i18n:** `react-i18next` with EN/ES translations in `src/locales/`.
 
-**API:** In dev, Vite proxies `/api/*` to `localhost:3000`. In prod, Vercel rewrites `/api/*` to the Railway backend URL. The frontend `services/` layer wraps all API calls.
+**API:** In dev, Vite proxies `/api/*` to `localhost:3000`. In prod, Vercel routes `/api/*` to `noxwork-gedcom-api.vercel.app`. The frontend `services/` layer wraps all API calls.
 
 ### Deployment
 
-- **Backend:** Vercel (`vercel.json` in api package). Entry point is `src/serverless.ts` — compiled to `dist/serverless.js` by `nest build`. Vercel wraps it as a serverless function. Migrations run at deploy time via `prisma migrate deploy` in `buildCommand`.
-- **Frontend:** Vercel (`vercel.json` in web package). Rewrites `/api/*` to the backend Vercel URL — update `REPLACE_WITH_API_VERCEL_URL` in `noxwork-gedcom-web/vercel.json` after deploying the API.
+- **Backend:** Vercel (`vercel.json` in api package). Entry point is `src/serverless.ts` — compiled to `dist/serverless.js` by `nest build`. `api/index.js` is a thin wrapper that loads the compiled handler; `includeFiles: dist/**` ensures the build output is bundled. Migrations run at deploy time via `prisma migrate deploy` in `buildCommand`.
+- **Frontend:** Vercel (`vercel.json` in web package). Uses `routes` to proxy `/api/*` to `https://noxwork-gedcom-api.vercel.app`.
 - **Database:** Neon.tech serverless PostgreSQL. Add `?connection_limit=1` to `DATABASE_URL` in Vercel environment variables to avoid connection pool exhaustion across serverless instances.
 
 ## Environment Variables
@@ -100,7 +100,7 @@ CORS_ORIGIN=http://localhost:5173
 ```
 VITE_SUPABASE_URL=https://your-project-ref.supabase.co
 VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
-VITE_API_URL=https://noxwork-gedcom-api.railway.app  # prod only
+VITE_API_URL=https://noxwork-gedcom-api.vercel.app  # prod only, optional (proxy handles it)
 ```
 
 Both packages have `.env.example` files.

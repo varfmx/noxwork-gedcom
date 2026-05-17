@@ -157,43 +157,6 @@ npm run dev                  # http://localhost:5173 (proxies /api → :3000)
 
 ---
 
-## Roadmap
-
-- [x] GEDCOM parser engine (INDI, FAM, HEAD tags)
-- [x] REST API for file upload and session retrieval
-- [x] Graph-based relationship resolver (BFS, multi-path, multi-role)
-- [x] React frontend with canvas visualization
-- [x] Layout engine (Dagre) for automatic node positioning with spouse alignment
-- [x] Supabase Auth: Google SSO + Email/Password login + registration
-- [x] Password recovery flow (forgot password, update password)
-- [x] Resend confirmation email + unconfirmed-user dashboard banner
-- [x] Toast notification system (success/error/info/warning)
-- [x] PostgreSQL persistence with Prisma ORM (Neon.tech)
-- [x] GEDCOM 5.5.1 export from database records
-- [x] Dashboard: project list, search, create, rename, delete
-- [x] i18n: English + Spanish translations
-- [x] Manual person CRUD (create, edit, delete) with optimistic updates
-- [x] Relationship drawing (Parent→Child, Spouse) from the canvas
-- [x] Position persistence (drag-save + restore on load)
-- [x] Auto Organize button (dagre re-layout + batch save)
-- [x] GEDCOM date picker (day/month/year → `D MMM YYYY`)
-- [x] Backend deployment (Vercel)
-- [x] Frontend deployment (Vercel)
-- [x] Export tree as PNG/PDF with project name title
-- [x] Right-click context menu (add child/spouse/parent, delete)
-- [x] Keyboard shortcuts (Delete/Backspace to remove nodes)
-- [x] Inline project rename from tree view
-- [x] Clear Canvas (batch delete all persons, keep project context)
-- [x] Create persons without importing GEDCOM
-
-### Planned
-
-- [ ] Search / filter individuals on the canvas
-- [ ] Highlight kinship paths on hover
-- [ ] Responsive sidebar (collapsible on mobile)
-- [x] Custom domain (`radixflow.app`)
-
----
 
 ## Tech Stack
 
